@@ -22,11 +22,6 @@ set(BLAS_LIBS "-lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm")
 # set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64")
 set(SCALAPACK_LIBS "-L${MKLROOT}/lib/intel64 -lmkl_scalapack_ilp64 -Wl,--no-as-needed -lmkl_intel_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_blacs_openmpi_ilp64 -lgomp -lpthread -lm -ldl")
 
-find_package(MPI REQUIRED)
-
-message(STATUS "MPI FOUND")
-message(STATUS "MPI_INCLUDE_PATH: ${MPI_INCLUDE_PATH}")
-include_directories(${MPI_C_INCLUDE_PATH})
 
 
 # Include and link directories
@@ -47,6 +42,12 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/pfock
     ${CONDA_PREFIX}/include
 )
+
+find_package(MPI REQUIRED)
+
+#message(STATUS "MPI FOUND")
+#message(STATUS "MPI_INCLUDE_PATH: ${MPI_INCLUDE_PATH}")
+#include_directories(${MPI_C_INCLUDE_PATH})
 
 # Add definitions for conditional compilation
 if(DYNAMIC)
