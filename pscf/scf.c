@@ -241,6 +241,7 @@ int main (int argc, char **argv)
     if (myrank == 0)  {
         printf("MPI level: %d\n", provided);
     }
+    printf("myrank = %d\n", myrank);
 #if 0
     char hostname[1024];
     gethostname (hostname, 1024);

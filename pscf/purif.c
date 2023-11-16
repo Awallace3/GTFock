@@ -16,6 +16,10 @@
 #include "purif.h"
 
 
+#include <malloc.h>
+#include <mm_malloc.h>
+
+
 #define MAX_PURF_ITERS 200
 #define MIN(a, b)    ((a) < (b) ? (a) : (b))
 #define MAX(a, b)    ((a) > (b) ? (a) : (b))
@@ -111,7 +115,7 @@ static void config_purif(purif_t *purif)
         purif->b_mat[i * LDBMAT + i] = 0.0;
     }
 
-    #pragma omp parallel for schedule(static) 
+    #pragma omp parallel for schedule(static)
     for(int i=0; i < nrows * ncols; i++)
     {
         purif->D_block[i]  = 0.0;
@@ -120,11 +124,11 @@ static void config_purif(purif_t *purif)
     }
     allocate_tmpbuf(nrows, ncols, nr, nc, &(purif->tmpbuf));
     size_t memsize = (2.0 * MAX_DIIS + 14.0) * meshsize * sizeof (double);
-    
+
     purif->h  = (double*) _mm_malloc(2 * purif->ncols_purif * sizeof(double), 64);
     purif->_h = (double*) _mm_malloc(2 * purif->ncols_purif * sizeof(double), 64);
-    
-    
+
+
     if (myrow == 0 && mycol == 0 && mygrd == 0)
         printf("  CPU uses %.3f MB\n", memsize / 1024.0 / 1024.0);
 }
@@ -134,7 +138,7 @@ purif_t *create_purif(BasisSet_t basis, int nprow_purif, int npcol_purif, int np
 {
     int myrank;
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-    
+
     if (myrank == 0) printf ("Initializing purification ...\n");
 
     // create purif
@@ -156,7 +160,7 @@ purif_t *create_purif(BasisSet_t basis, int nprow_purif, int npcol_purif, int np
     MPI_Comm comm0;
     MPI_Comm_split(MPI_COMM_WORLD, flag_purif, myrank, &comm0);
 
-    
+
     if (purif->rundgemm == 1)
     {
         int ndims = 3, reorder = 1;
@@ -181,9 +185,9 @@ purif_t *create_purif(BasisSet_t basis, int nprow_purif, int npcol_purif, int np
         MPI_Comm_split(purif->comm_purif, mygrd, plane_rank, &(purif->comm_purif_plane));
         config_purif(purif);
     }
-    
+
     if (myrank == 0) printf ("  Done\n");
-    
+
     return purif;
 }
 
@@ -193,7 +197,7 @@ void destroy_purif(purif_t * purif)
     if (purif->rundgemm == 1)
     {
         dealloc_tmpbuf(&(purif->tmpbuf));
-        
+
         MPI_Comm_free(&(purif->comm_purif));
         MPI_Comm_free(&(purif->comm_purif_col));
         MPI_Comm_free(&(purif->comm_purif_row));
@@ -215,14 +219,14 @@ void destroy_purif(purif_t * purif)
 }
 
 
-static double get_wtime_sec()
-{
-    double sec;
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    sec = tv.tv_sec + (double) tv.tv_usec / 1000000.0;
-    return sec;
-}
+/* static double get_wtime_sec() */
+/* { */
+/*     double sec; */
+/*     struct timeval tv; */
+/*     gettimeofday(&tv, NULL); */
+/*     sec = tv.tv_sec + (double) tv.tv_usec / 1000000.0; */
+/*     return sec; */
+/* } */
 
 int compute_purification(purif_t * purif, double *F_block, double *D_block)
 {
@@ -233,10 +237,10 @@ int compute_purification(purif_t * purif, double *F_block, double *D_block)
     purif->timetr = 0.0;
     double st1, et1, st2, et2;
 
-    if (purif->rundgemm == 1) 
+    if (purif->rundgemm == 1)
     {
         st1 = get_wtime_sec();
-        
+
         // initialization
         int nrows = purif->nrows_purif;
         int ncols = purif->ncols_purif;
@@ -266,8 +270,8 @@ int compute_purification(purif_t * purif, double *F_block, double *D_block)
         int mycol = coords[1];
         int mygrd = coords[2];
         tmpbuf_t tmpbuf = purif->tmpbuf;
-        
-        if (purif->runpurif == 1) 
+
+        if (purif->runpurif == 1)
         {
             // compute eigenvalue estimates using Gershgorin (F is symmetric)
             // offdF = sum(abs(F))' - abs(diag(F));
@@ -276,14 +280,14 @@ int compute_purification(purif_t * purif, double *F_block, double *D_block)
             // hmax = max(diagF + offdF);
             double *h  = purif->h;  // hmin, hmax
             double *_h = purif->_h; // offDF, diagF
-            for (int i = 0; i < ncols; i++) 
+            for (int i = 0; i < ncols; i++)
             {
                 _h[i] = 0.0;
                 _h[i + ncols] = 0.0;
-                for (int j = 0; j < nrows; j++) 
+                for (int j = 0; j < nrows; j++)
                 {
                     _h[i] += fabs(F_block[i + j * ncols]);
-                    if (j + startrow == i + startcol) 
+                    if (j + startrow == i + startcol)
                         _h[i + ncols] = F_block[i + j * ncols];
                 }
                 _h[i] = _h[i] - fabs(_h[i + ncols]);
@@ -294,11 +298,11 @@ int compute_purification(purif_t * purif, double *F_block, double *D_block)
             MPI_Reduce(_h, h, 2 * ncols, MPI_DOUBLE, MPI_SUM, 0, comm_row);
 
             double _hmax, _hmin, hmax, hmin;
-            if (myrow == 0) 
+            if (myrow == 0)
             {
                 _hmin = DBL_MAX;
                 _hmax = -DBL_MAX;
-                for (int i = 0; i < ncols; i++) 
+                for (int i = 0; i < ncols; i++)
                 {
                     _hmin = h[i] > _hmin ? _hmin : h[i];
                     _hmax = h[i + ncols] < _hmax ? _hmax : h[i + ncols];
@@ -316,28 +320,28 @@ int compute_purification(purif_t * purif, double *F_block, double *D_block)
             // mu_bar = trace_dense_matrix(F)/7;
             double trF, _trF;
             _trF = 0.0;
-            for (int i = 0; i < lentr; i++) 
+            for (int i = 0; i < lentr; i++)
                 _trF += F_block[(i + starttrrow) * ncols + i + starttrcol];
-            
+
             MPI_Allreduce(&_trF, &trF, 1, MPI_DOUBLE, MPI_SUM, comm_purif);
 
             double mu_bar = trF / (double) nbf;
             // lambda = min([ 5/(hmax - mu_bar), (7-5)/(mu_bar - hmin) ]);
             double lambda = MIN((double) nobtls / (hmax - mu_bar),
                                 (double) (nbf - nobtls) / (mu_bar - hmin));
-            if (myrank == 0) 
+            if (myrank == 0)
             {
                 printf("mu_bar = %le, lambda = %le,"
                        " hmax = %le, hmin = %le, nobtls = %d\n",
                        mu_bar, lambda, hmax, hmin, nobtls);
             }
-            
+
             // initial "guess" for density matrix
             // D = (lambda*mu_bar/7 + 5/7)*eye(7) - (lambda/7)*D;
-            for (int i = 0; i < nrows * ncols; i++) 
+            for (int i = 0; i < nrows * ncols; i++)
                 D_block[i] = F_block[i] * (-lambda / nbf);
-            
-            for (int i = 0; i < lentr; i++) 
+
+            for (int i = 0; i < lentr; i++)
             {
                 D_block[(i + starttrrow) * ncols + i + starttrcol] +=
                     lambda * mu_bar / (double) nbf + (double) nobtls / nbf;
@@ -348,7 +352,7 @@ int compute_purification(purif_t * purif, double *F_block, double *D_block)
         // convergence appears slow at first, before accelerating at end
         double dgemm_time, pdgemm_s, pdgemm_e, tr_s, tr_e, errnorm;
         double tr[2], tr_local[2], c, errnorm_local, n2cp1, cp1, ncp1;
-        for (it = 0; it < MAX_PURF_ITERS; it++) 
+        for (it = 0; it < MAX_PURF_ITERS; it++)
         {
             pdgemm_s = get_wtime_sec();
             pdgemm3D(myrow, mycol, mygrd, comm_row, comm_col, comm_grd,
@@ -359,7 +363,7 @@ int compute_purification(purif_t * purif, double *F_block, double *D_block)
             purif->timedgemm  += dgemm_time;
 
             tr_s = get_wtime_sec();
-            if (purif->runpurif == 1) 
+            if (purif->runpurif == 1)
             {
                 // Stopping criterion: errnorm = norm(D-D2, 'fro');
                 // A cheaper stopping criterion may be to check the trace of D*D and
@@ -367,12 +371,12 @@ int compute_purification(purif_t * purif, double *F_block, double *D_block)
                 // fprintf('trace D*D //f\n', trace(D*D));
                 // Might be possible to "lag" the computation of c by one iteration
                 // so that the global communication for traces can be overlapped.
-                // Note: c appears to converge to 0.5           
+                // Note: c appears to converge to 0.5
                 // c = trace(D2-D3) / trace(D-D2);
                 errnorm_local = 0.0;
                 tr_local[0] = 0.0;
                 tr_local[1] = 0.0;
-                for (int i = 0; i < lentr; i++) 
+                for (int i = 0; i < lentr; i++)
                 {
                     int idx_ii = (i + starttrrow) * ncols + (i + starttrcol);
                     tr_local[0] += D2_block[idx_ii] - D3_block[idx_ii];
@@ -380,33 +384,33 @@ int compute_purification(purif_t * purif, double *F_block, double *D_block)
                 }
                 MPI_Allreduce(tr_local, tr, 2, MPI_DOUBLE, MPI_SUM, comm_purif);
                 c = tr[0] / tr[1];
-                
+
                 n2cp1 = 1.0 - 2.0 * c;
                 cp1   = c + 1.0;
                 ncp1  = 1.0 - c;
-                if (c < 0.5) 
+                if (c < 0.5)
                 {
                     #pragma omp parallel for reduction(+: errnorm_local)
-                    for (int i = 0; i < nrows * ncols; i++) 
+                    for (int i = 0; i < nrows * ncols; i++)
                     {
                         double D_D2 = D_block[i] - D2_block[i];
                         errnorm_local += D_D2 * D_D2;
-                        
+
                         // D = ((1-2*c)*D + (1+c)*D2 - D3) / (1-c);
                         D_block[i] = (n2cp1 * D_block[i] + cp1 * D2_block[i] - D3_block[i]) / ncp1;
                     }
                 } else {
                     #pragma omp parallel for reduction(+: errnorm_local)
-                    for (int i = 0; i < nrows * ncols; i++) 
+                    for (int i = 0; i < nrows * ncols; i++)
                     {
                         double D_D2 = D_block[i] - D2_block[i];
                         errnorm_local += D_D2 * D_D2;
-                        
+
                         // D = ((1+c)*D2 - D3) / c;
                         D_block[i] = (cp1 * D2_block[i] - D3_block[i]) / c;
                     }
                 }
-                
+
                 MPI_Reduce(&errnorm_local, &errnorm, 1, MPI_DOUBLE, MPI_SUM, 0, comm_purif);
                 if (myrank == 0) errnorm = sqrt(errnorm);
             }
@@ -459,7 +463,7 @@ void compute_diis(PFock_t pfock, purif_t * purif, double *D_block, double *F_blo
     MPI_Comm comm0 = purif->comm_purif;
     tmpbuf_t tmpbuf = purif->tmpbuf;
 
-    if (purif->rundgemm == 1) {    
+    if (purif->rundgemm == 1) {
         int coords[3];
         MPI_Comm_rank (purif->comm_purif, &myrank);
         MPI_Cart_coords (purif->comm_purif, myrank, 3, coords);
@@ -468,7 +472,7 @@ void compute_diis(PFock_t pfock, purif_t * purif, double *D_block, double *F_blo
         int mygrd = coords[2];
         double *cur_F = F_block;
         int cur_idx;
-        double *cur_diis;    
+        double *cur_diis;
         if (iter > 1) {
             if (purif->len_diis < MAX_DIIS) {
                 cur_idx = purif->len_diis;
@@ -491,14 +495,14 @@ void compute_diis(PFock_t pfock, purif_t * purif, double *D_block, double *F_blo
                 int dest;
                 coords[0] = mycol;
                 coords[1] = myrow;
-                coords[2] = mygrd;               
+                coords[2] = mygrd;
                 MPI_Cart_rank(purif->comm_purif, coords, &dest);
                 MPI_Sendrecv(cur_diis, nrows * ncols,
                              MPI_DOUBLE, dest, dest,
                              workm, nrows * ncols,
                              MPI_DOUBLE, dest, MPI_ANY_TAG,
                              purif->comm_purif, MPI_STATUS_IGNORE);
-                // F*D*S - (F*D*S)'       
+                // F*D*S - (F*D*S)'
                 for (int i = 0; i < nrows; i++) {
                     for (int j = 0; j < ncols; j++) {
                         cur_diis[i * ncols + j] -= workm[j * nrows + i];
@@ -524,7 +528,7 @@ void compute_diis(PFock_t pfock, purif_t * purif, double *D_block, double *F_blo
                         }
                     }
                 } /* end for */
-                // update b_mat on rank 0          
+                // update b_mat on rank 0
                 MPI_Reduce(_dot, &(b_mat[cur_idx * LDBMAT]),
                            purif->len_diis, MPI_DOUBLE, MPI_SUM, 0, comm_purif);
                 if (myrank == 0) {
@@ -674,7 +678,7 @@ static void peig(int ga_A, int ga_B, int n, int nprow, int npcol, double *eval)
     assert(iwork != NULL);
     pdsyevd_("V", "U", &n, A, &ione, &ione, descA,
             eval, Z, &ione, &ione, descZ,
-            work, &lwork, iwork, &liwork, &info);    
+            work, &lwork, iwork, &liwork, &info);
 #endif
 
     // compute eigenvalues and eigenvectors
@@ -692,7 +696,7 @@ static void peig(int ga_A, int ga_B, int n, int nprow, int npcol, double *eval)
     assert(iwork != NULL);
     pdsyevd_("V", "U", &n, A, &ione, &ione, descA,
             eval, Z, &ione, &ione, descZ,
-            work, &lwork, iwork, &liwork, &info); 
+            work, &lwork, iwork, &liwork, &info);
 #endif
     double t2 = MPI_Wtime();
     if (myrank == 0) {
@@ -763,7 +767,7 @@ void compute_eigensolve(int ga_tmp, purif_t * purif, double *F_block, int nprow,
 
     // edmond
     int myrank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &myrank);    
+    MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     if (myrank == 0)
     {
         int i;
