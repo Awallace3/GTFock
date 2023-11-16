@@ -27,7 +27,7 @@ add_executable(pscf ${SRC})
 target_link_libraries(pscf
     pfock
     ${WORK_TOP}/libcint/libcint.a
-    ${WORK_TOP}/simint_icx/build-avx512/install/lib64/libsimint.a
+    ${WORK_TOP}/simint/build-avx512/install/lib/libsimint.a
     ${WORK_TOP}/GTMatrix/libGTMatrix.a
     ${BLAS_LIBS}
     ${SCALAPACK_LIBS}

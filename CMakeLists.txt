@@ -13,14 +13,14 @@ project(MyProject)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Compiler options
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -qopenmp -std=gnu99 -fasm-blocks -g -xHost -Wunknown-pragmas -Wunused-variable")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -qopenmp -std=gnu99 -fasm-blocks -g -xHost -Wunknown-pragmas -Wunused-variable  -diag-disable=10441")
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -march=native -Wunknown-pragmas -Wunused-variable")
 
 # Libraries
 # For linking MKL and other libraries, you can use find_package if available, or set them manually
 set(BLAS_LIBS "-lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm")
-# set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64")
-set(SCALAPACK_LIBS "-L${MKLROOT}/lib/intel64 -lmkl_scalapack_ilp64 -Wl,--no-as-needed -lmkl_intel_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_blacs_openmpi_ilp64 -lgomp -lpthread -lm -ldl")
+set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64")
+# set(SCALAPACK_LIBS "-L${MKLROOT}/lib/intel64 -lmkl_scalapack_ilp64 -Wl,--no-as-needed -lmkl_intel_ilp64 -lmkl_gnu_thread -lmkl_core -lmkl_blacs_openmpi_ilp64 -lgomp -lpthread -lm -ldl")
 
 
 
@@ -31,12 +31,13 @@ set(SCALAPACK_LIBS "-L${MKLROOT}/lib/intel64 -lmkl_scalapack_ilp64 -Wl,--no-as-n
 
 
 # NOTE: UPDATE THIS TO YOUR OWN PATH
-set(WORK_TOP "/storage/home/hhive1/awallace43/gits")
+# set(WORK_TOP "/storage/home/hhive1/awallace43/gits")
+message(STATUS "WORK_TOP: ${WORK_TOP}")
 
 # Include and link directories
 include_directories(
     ${WORK_TOP}/libcint
-    ${WORK_TOP}/simint_icx/build-avx512/install/include
+    ${WORK_TOP}/simint/build-avx512/install/include
     ${WORK_TOP}/GTMatrix
     ${CMAKE_CURRENT_SOURCE_DIR}/pscf
     ${CMAKE_CURRENT_SOURCE_DIR}/pfock

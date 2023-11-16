@@ -20,15 +20,6 @@ if(DO_SCF EQUAL "1")
     add_definitions(-D__SCF__)
 endif()
 
-# Include directories
-# include_directories(
-#     ${WORK_TOP}/libcint
-#     ${WORK_TOP}/simint/build-avx512/install/include
-#     ${WORK_TOP}/GTMatrix
-#     ${WORK_TOP}/pscf
-#     ${WORK_TOP}/pfock
-# )
-
 # Source files
 file(GLOB SRC "*.c")
 
