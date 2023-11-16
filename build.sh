@@ -6,10 +6,14 @@ cd build
 export CMAKE_PREFIX_PATH=$CONDA_PREFIX:$CMAKE_PREFIX_PATH
 export WORK_TOP=/theoryfs2/ds/amwalla3/gits
 
-export CC=icc
-export CXX=icpc
-export MPICC=mpiicc
-export MPICXX=mpiicpc
+export CC=icx
+export CXX=icpx
+export MPICC=mpiicx
+export MPICXX=mpiicpx
+# export CC=icc
+# export CXX=icpc
+# export MPICC=mpiicc
+# export MPICXX=mpiicpc
 
 export AR=xiar rcs
 
