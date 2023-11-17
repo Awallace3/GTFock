@@ -32,19 +32,22 @@ set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64")
 
 # NOTE: UPDATE THIS TO YOUR OWN PATH
 # set(WORK_TOP "/storage/home/hhive1/awallace43/gits")
-message(STATUS "WORK_TOP: ${WORK_TOP}")
+# message(STATUS "WORK_TOP: ${WORK_TOP}")
+find_package(CInt REQUIRED)
+find_package(GTMatrix REQUIRED)
+find_package(MPI REQUIRED)
 
 # Include and link directories
 include_directories(
-    ${WORK_TOP}/libcint
-    ${WORK_TOP}/simint/build-avx512/install/include
-    ${WORK_TOP}/GTMatrix
+    # ${WORK_TOP}/simint/build-avx512/install/include
+    # ${WORK_TOP}/libcint
+    # ${WORK_TOP}/GTMatrix
+    # ${WORK_TOP}/deps/include
     ${CMAKE_CURRENT_SOURCE_DIR}/pscf
     ${CMAKE_CURRENT_SOURCE_DIR}/pfock
     ${CONDA_PREFIX}/include
 )
 
-find_package(MPI REQUIRED)
 
 #message(STATUS "MPI FOUND")
 #message(STATUS "MPI_INCLUDE_PATH: ${MPI_INCLUDE_PATH}")
