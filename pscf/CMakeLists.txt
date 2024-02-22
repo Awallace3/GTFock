@@ -23,6 +23,16 @@ file(GLOB SRC "*.c")
 # add_library(pscf STATIC ${SRC})
 add_executable(pscf ${SRC})
 
+find_package(simint REQUIRED)
+message(STATUS "SIMINT_FOUND: ${SIMINT_DIR}")
+message(STATUS "SIMINT_LIBRARIES: ${simint_LIBRARIES}")
+find_package(CInt REQUIRED)
+find_package(GTMatrix REQUIRED)
+set(CMAKE_C_FLAGS " -O3 -Wall -qopenmp -std=gnu99 -fasm-blocks -g -xHost -Wunknown-pragmas -Wunused-variable  -diag-disable=10441")
+message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
+message(STATUS "simint_LIBS: ${simint_LIBRARIES}")
+message(STATUS "CInt_LIBS: ${CInt_LIBRARIES}")
+
 
 target_link_libraries(pscf
     pfock
@@ -31,6 +41,9 @@ target_link_libraries(pscf
     # ${WORK_TOP}/simint/build-avx512/install/lib/libsimint.a
     # ${WORK_TOP}/deps/lib/libcint.a
     # ${WORK_TOP}/deps/lib/libGTMatrix.a
+    ${simint_LIBRARIES}
+    ${CInt_LIBRARIES}
+    ${GTMatrix_LIBRARIES}
     ${BLAS_LIBS}
     ${SCALAPACK_LIBS}
     ${MPI_C_LIBRARIES}

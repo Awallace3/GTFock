@@ -9,7 +9,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_COMPILER ${MPICC})
 
 # Add compile options and definitions based on the configuration in make.in
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CFLAGS}")
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CFLAGS}")
+set(CMAKE_C_FLAGS " -O3 -Wall -qopenmp -std=gnu99 -fasm-blocks -g -xHost -Wunknown-pragmas -Wunused-variable  -diag-disable=10441")
 
 # Add preprocessor definitions
 if(DYNAMIC EQUAL "1")
@@ -22,6 +23,7 @@ endif()
 
 # Source files
 file(GLOB SRC "*.c")
+
 
 # Create a static library 'libpfock.a'
 add_library(pfock STATIC ${SRC})
