@@ -4,7 +4,6 @@
 //#include <ga.h>
 //#include <macdecls.h>
 #include <malloc.h>
-#include <mm_malloc.h>
 #include <string.h>
 #include <sys/time.h>
 #include <omp.h>
@@ -22,8 +21,6 @@
 
 #include "GTMatrix.h"
 #include "utils.h"
-
-
 
 static PFockStatus_t init_fock(PFock_t pfock)
 {
@@ -653,7 +650,6 @@ PFockStatus_t PFock_create(BasisSet_t basis, int nprow, int npcol, int ntasks,
         pfock->npcol = npcol;
         pfock->nprocs = nprow * npcol;
     }
-    /* printf("PFock_create: nprow = %d, npcol = %d\n", pfock->nprow, pfock->npcol); */
     if (tolscr < 0.0) {
         PFOCK_PRINTF(1, "Invalid screening threshold\n");
         return PFOCK_STATUS_INVALID_VALUE;
@@ -1180,7 +1176,6 @@ PFockStatus_t PFock_createOvlMat(PFock_t pfock, BasisSet_t basis)
         PFOCK_PRINTF (1, "Memory allocation failed\n");
         return PFOCK_STATUS_ALLOC_FAILED;
     }
-    printf("pre-my_pei(): pfock->nprow = %d pfock->npcol = %d\n", pfock->nprow, pfock->npcol);
 
     my_peig(pfock->gtm_Smat, pfock->gtm_tmp1, nbf, pfock->nprow, pfock->npcol, eval);
 
@@ -1216,8 +1211,8 @@ PFockStatus_t PFock_createOvlMat(PFock_t pfock, BasisSet_t basis)
     int ncols_X = gtm_Xmat->c_blklens[gtm_Xmat->my_colblk];
     int X_row_s = gtm_Xmat->r_displs[gtm_Xmat->my_rowblk];
     int X_col_s = gtm_Xmat->c_displs[gtm_Xmat->my_colblk];
-    double *tmp1_buf = (double*) _mm_malloc(nrows_X * nbf * sizeof(double), 64);
-    double *tmp2_buf = (double*) _mm_malloc(nbf * ncols_X * sizeof(double), 64);
+    double *tmp1_buf = (double*) aligned_malloc(nrows_X * nbf * sizeof(double), 64);
+    double *tmp2_buf = (double*) aligned_malloc(nbf * ncols_X * sizeof(double), 64);
 
     GTM_startBatchGet(gtm_tmp1);
     GTM_addGetBlockRequest(gtm_tmp1, X_row_s, nrows_X, 0, nbf, tmp1_buf, nbf);
@@ -1245,8 +1240,8 @@ PFockStatus_t PFock_createOvlMat(PFock_t pfock, BasisSet_t basis)
         gtm_X_block, gtm_X_ld
     );
 
-    _mm_free(tmp1_buf);
-    _mm_free(tmp2_buf);
+    aligned_free(tmp1_buf);
+    aligned_free(tmp2_buf);
 
     GTM_sync(pfock->gtm_Xmat);
 

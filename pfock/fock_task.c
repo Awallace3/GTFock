@@ -9,15 +9,13 @@
 //#include <macdecls.h>
 #include <sys/time.h>
 
-#include <malloc.h>
-#include <mm_malloc.h>
-#include <immintrin.h>
-
 #include "pfock.h"
 #include "config.h"
 #include "taskq.h"
 #include "fock_task.h"
 #include "cint_basisset.h"
+
+#include "aligned_malloc.h"
 
 // Using global variables is a bad habit, but it is convenient.
 // Consider fix this problem later.
@@ -231,7 +229,7 @@ void init_block_buf(BasisSet_t _basis, PFock_t pfock)
 
     int max_buf_entry_size = max_dim * max_dim;
     update_F_buf_size = 6 * max_buf_entry_size;
-    update_F_buf = _mm_malloc(sizeof(double) * nthreads * update_F_buf_size, 64);
+    update_F_buf = aligned_malloc(sizeof(double) * nthreads * update_F_buf_size, 64);
     assert(update_F_buf != NULL);
 
     if (myrank == 0)

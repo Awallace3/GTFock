@@ -1,45 +1,37 @@
 cmake_minimum_required(VERSION 3.10)
 project(GTFock)
 
-# Minimum version of CMake required
-cmake_minimum_required(VERSION 3.10)
-
-# Project name
-project(MyProject)
-
-# Set the compilers
-# set(CMAKE_C_COMPILER "mpicc")
-# set(CMAKE_CXX_COMPILER "mpicxx")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+find_package(MPI REQUIRED)
+find_package(simint REQUIRED)
+find_package(CInt REQUIRED)
+find_package(GTMatrix REQUIRED)
+
 # Compiler options
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -qopenmp -std=gnu99 -fasm-blocks -g -xHost -Wunknown-pragmas -Wunused-variable  -diag-disable=10441")
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -march=native -Wunknown-pragmas -Wunused-variable")
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -qopenmp -std=gnu99 -fasm-blocks -g -xHost -Wunknown-pragmas -Wunused-variable")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable")
 
 # Libraries
 set(BLAS_LIBS "-lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm")
 set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64")
 
-find_package(simint REQUIRED)
-find_package(CInt REQUIRED)
-find_package(GTMatrix REQUIRED)
-find_package(MPI REQUIRED)
-
+include_directories(
+    ${MPI_C_INCLUDE_PATH}
+    ${CMAKE_CURRENT_LIST_DIR}
+)
 # message(STATUS "CInt_INCLUDE_DIRS: ${CInt_INCLUDE_DIRS}")
 # message(STATUS "CInt_LIBRARIES: ${CInt_LIBRARIES}")
 
 # Include and link directories
 include_directories(
-    # ${WORK_TOP}/simint/build-avx512/install/includes
-    # ${WORK_TOP}/libcint
-    # ${WORK_TOP}/GTMatrix
-    # ${WORK_TOP}/deps/include
     ${simint_DIR}/include/simint
     ${CInt_INCLUDE_DIRS}
     ${GTMatrix_INCLUDE_DIRS}
+    ${CONDA_PREFIX}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/aligned_malloc
     ${CMAKE_CURRENT_SOURCE_DIR}/pscf
     ${CMAKE_CURRENT_SOURCE_DIR}/pfock
-    ${CONDA_PREFIX}/include
 )
 
 
@@ -63,5 +55,6 @@ if(NOT SCF_OUT)
 endif()
 
 # Add subdirectories
+add_subdirectory(aligned_malloc)
 add_subdirectory(pfock)
 add_subdirectory(pscf)

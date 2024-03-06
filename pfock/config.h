@@ -1,6 +1,8 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+#include "aligned_malloc.h"
+
 
 #define GA_NB
 #define MIN(a, b)    ((a) < (b) ? (a) : (b))
@@ -11,8 +13,8 @@
                              //  10 is full info
 
 #define alignsize  64
-#define PFOCK_MALLOC(size)    _mm_malloc(size, alignsize)
-#define PFOCK_FREE(addr)      _mm_free(addr)
+#define PFOCK_MALLOC(size)    aligned_malloc(size, alignsize)
+#define PFOCK_FREE(addr)      aligned_free(addr)
 
 #if ( _DEBUG_LEVEL_ == -1 )
 #define PFOCK_PRINTF( level, fmt, args... )        {}

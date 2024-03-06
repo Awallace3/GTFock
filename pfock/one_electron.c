@@ -7,14 +7,53 @@
 #include <mpi.h>
 #include <mkl_scalapack.h>
 
-#include <malloc.h>
-#include <mm_malloc.h>
-
 #include "config.h"
 #include "one_electron.h"
+#include "aligned_malloc.h"
 
 #include "GTMatrix.h"
 
+/* #define aligned_malloc  malloc */
+/* #define aligned_free  free */
+
+// USER DEFINED aligned_malloc
+/* void* aligned_malloc(size_t size, size_t alignment) { */
+/*     if (alignment & (alignment - 1)) { */
+/*         // The alignment must be a power of two */
+/*         fprintf(stderr, "Alignment must be a power of two.\n"); */
+/*         return NULL; */
+/*     } */
+/*  */
+/*     if (alignment < sizeof(void*)) { */
+/*         // The alignment must be at least the size of a pointer */
+/*         alignment = sizeof(void*); */
+/*     } */
+/*  */
+/*     void* original = NULL; */
+/*     void* aligned = NULL; */
+/*  */
+/*     // Allocate extra memory to ensure we can align the memory and store the offset */
+/*     original = malloc(size + alignment + sizeof(void*)); */
+/*     if (original) { */
+/*         // Calculate the aligned memory address */
+/*         aligned = (void*)(((size_t)original + sizeof(void*) + alignment - 1) & ~(alignment - 1)); */
+/*         // Store the original pointer just before the aligned address */
+/*         *((void**)((size_t)aligned - sizeof(void*))) = original; */
+/*     } */
+/*  */
+/*     return aligned; */
+/* } */
+/*  */
+/* void aligned_free(void* ptr) { */
+/*     if (!ptr) { */
+/*         // Handle NULL pointer */
+/*         return; */
+/*     } */
+/*  */
+/*     // Retrieve the original pointer which was stored just before the aligned address */
+/*     void* original = *((void**)((size_t)ptr - sizeof(void*))); */
+/*     free(original); */
+/* } */
 
 inline void matrix_block_write(double *matrix, int startrow,
                                int startcol, int ldm,
@@ -141,31 +180,25 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     int hi[2];
     int ld;
     int ione = 1;
-    int world_size;
-    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
     // init blacs
     int nb = MIN(n / nprow, n / npcol);
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     Cblacs_pinfo(&nn, &mm);
-    printf("nn = %d, mm = %d\n", nn, mm);
-    /* Cblacs_get(-1, 0, &ictxt); */
     Cblacs_get(-1, 0, &ictxt);
-    printf("ictxt = %d\n", ictxt);
     Cblacs_gridinit(&ictxt, "Row", nprow, npcol);
     Cblacs_gridinfo(ictxt, &nprow, &npcol, &myrow, &mycol);
 
     // init matrices
-    /* printf("  myrank = %d: n = %d, nb = %d, myrow = %d, mycol = %d, izero = %d, nprow\n", myrank, myrow, mycol, n, nb); */
-    printf(" pfock/one_electron.c: %d  myrank = %d: n = %d, nb = %d, myrow = %d, mycol = %d, izero = %d, nprow = %d\n", world_size, myrank, n, nb, myrow, mycol, izero, nprow);
+
     int nrows = numroc_(&n, &nb, &myrow, &izero, &nprow);
     int ncols = numroc_(&n, &nb, &mycol, &izero, &npcol);
     int itemp = nrows > 1 ? nrows : 1;
     descinit_(descA, &n, &n, &nb, &nb, &izero, &izero, &ictxt, &itemp, &info);
     descinit_(descZ, &n, &n, &nb, &nb, &izero, &izero, &ictxt, &itemp, &info);
     int blocksize = nrows * ncols;
-    double *A = (double *)_mm_malloc(blocksize * sizeof (double), 64);
-    double *Z = (double *)_mm_malloc(blocksize * sizeof (double), 64);
+    double *A = (double *)aligned_malloc(blocksize * sizeof (double), 64);
+    double *Z = (double *)aligned_malloc(blocksize * sizeof (double), 64);
     assert(Z != NULL && A != NULL);
 
     // distribute source matrix
@@ -202,7 +235,7 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
 
     double t1 = MPI_Wtime();
     // inquire working space
-    double *work = (double *)_mm_malloc(2 * sizeof (double), 64);
+    double *work = (double *)aligned_malloc(2 * sizeof (double), 64);
     assert (work != NULL);
     int lwork = -1;
 #if 0
@@ -210,7 +243,7 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
             eval, Z, &ione, &ione, descZ, work, &lwork, &info);
 #else
     int liwork = -1;
-    int *iwork = (int *)_mm_malloc(2 * sizeof (int), 64);
+    int *iwork = (int *)aligned_malloc(2 * sizeof (int), 64);
     assert(iwork != NULL);
     pdsyevd_("V", "U", &n, A, &ione, &ione, descA,
             eval, Z, &ione, &ione, descZ,
@@ -219,16 +252,16 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
 
     // compute eigenvalues and eigenvectors
     lwork = (int)work[0] * 2;
-    _mm_free(work);
-    work = (double *)_mm_malloc(lwork * sizeof (double), 64);
+    aligned_free(work);
+    work = (double *)aligned_malloc(lwork * sizeof (double), 64);
     assert(work != NULL);
 #if 0
     pdsyev ("V", "U", &n, A, &ione, &ione, descA,
             eval, Z, &ione, &ione, descZ, work, &lwork, &info);
 #else
     liwork = (int)iwork[0];
-    _mm_free(iwork);
-    iwork = (int *)_mm_malloc(liwork * sizeof (int), 64);
+    aligned_free(iwork);
+    iwork = (int *)aligned_malloc(liwork * sizeof (int), 64);
     assert(iwork != NULL);
     pdsyevd_("V", "U", &n, A, &ione, &ione, descA,
             eval, Z, &ione, &ione, descZ,
@@ -268,9 +301,9 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     GTM_stopBatchPut(gtm_B);
     GTM_sync(gtm_B);
 
-    _mm_free(A);
-    _mm_free(Z);
-    _mm_free(work);
+    aligned_free(A);
+    aligned_free(Z);
+    aligned_free(work);
 
     Cblacs_gridexit(ictxt);
 }

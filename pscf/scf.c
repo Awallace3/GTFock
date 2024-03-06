@@ -184,14 +184,11 @@ static void init_oedmat(BasisSet_t basis, PFock_t pfock,
     int erow_purif = srow_purif + nrows_purif - 1;
     int ecol_purif = scol_purif + ncols_purif - 1;
 
-    printf(" myrank = %d nprow = %d npcol = %d\n", myrank, nprow, npcol);
-
     // compute S and X
     if (myrank == 0) {
         printf("  Computing S and X\n");
     }
     t1 = MPI_Wtime();
-    printf(" before PFock_createOvlMat: nprow = %d, npcol = %d\n", pfock->nprow, pfock->npcol);
     PFock_createOvlMat(pfock, basis);
     if (purif->runpurif == 1)
     {
@@ -240,6 +237,7 @@ int main (int argc, char **argv)
     int provided;
     MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+    printf("Rank %d of %d\n", myrank, nprocs);
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     if (myrank == 0)  {
         printf("MPI level: %d\n", provided);
@@ -323,7 +321,6 @@ int main (int argc, char **argv)
     natoms = btmp[5];
     nshells = btmp[6];
     nfunctions = btmp[7];
-    printf("  nprow_fock = %d\n", nprow_fock);
 
     // broadcast basis set
     void *bsbuf;
@@ -349,7 +346,6 @@ int main (int argc, char **argv)
     PFock_t pfock;
     PFock_create(basis, nprow_fock, npcol_fock, nblks_fock, 1e-11,
                  MAX_NUM_D, IS_SYMM, &pfock);
-    printf("  Completed PFock_create\n");
     if (myrank == 0) {
         double mem_cpu;
         PFock_getMemorySize(pfock, &mem_cpu);
@@ -359,8 +355,6 @@ int main (int argc, char **argv)
 
     // init purif
     purif_t *purif = create_purif(basis, nprow_purif, nprow_purif, nprow_purif);
-
-    printf(" before init_oedmat: nprow = %d, npcol = %d\n", pfock->nprow, pfock->npcol);
     init_oedmat(basis, pfock, purif, nprow_fock, npcol_fock);
 
     // compute SCF

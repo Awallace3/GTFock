@@ -14,10 +14,7 @@
 
 #include "pdgemm.h"
 #include "purif.h"
-
-
-#include <malloc.h>
-#include <mm_malloc.h>
+#include "aligned_malloc.h"
 
 
 #define MAX_PURF_ITERS 200
@@ -85,13 +82,13 @@ static void config_purif(purif_t *purif)
     int meshsize = nrows * ncols;
     size_t mesh_memsize = meshsize * sizeof(double);
     purif->meshsize = meshsize;
-    purif->X_block  = (double *) _mm_malloc(mesh_memsize, 64);
-    purif->S_block  = (double *) _mm_malloc(mesh_memsize, 64);
-    purif->H_block  = (double *) _mm_malloc(mesh_memsize, 64);
-    purif->F_block  = (double *) _mm_malloc(mesh_memsize, 64);
-    purif->D_block  = (double *) _mm_malloc(mesh_memsize, 64);
-    purif->D2_block = (double *) _mm_malloc(mesh_memsize, 64);
-    purif->D3_block = (double *) _mm_malloc(mesh_memsize, 64);
+    purif->X_block  = (double *) aligned_malloc(mesh_memsize, 64);
+    purif->S_block  = (double *) aligned_malloc(mesh_memsize, 64);
+    purif->H_block  = (double *) aligned_malloc(mesh_memsize, 64);
+    purif->F_block  = (double *) aligned_malloc(mesh_memsize, 64);
+    purif->D_block  = (double *) aligned_malloc(mesh_memsize, 64);
+    purif->D2_block = (double *) aligned_malloc(mesh_memsize, 64);
+    purif->D3_block = (double *) aligned_malloc(mesh_memsize, 64);
     assert (purif->X_block  != NULL);
     assert (purif->S_block  != NULL);
     assert (purif->H_block  != NULL);
@@ -100,12 +97,12 @@ static void config_purif(purif_t *purif)
     assert (purif->D2_block != NULL);
     assert (purif->D3_block != NULL);
     // working space for purification
-    purif->diis_vecs = (double *) _mm_malloc (MAX_DIIS * mesh_memsize, 64);
-    purif->F_vecs    = (double *) _mm_malloc (MAX_DIIS * mesh_memsize, 64);
+    purif->diis_vecs = (double *) aligned_malloc (MAX_DIIS * mesh_memsize, 64);
+    purif->F_vecs    = (double *) aligned_malloc (MAX_DIIS * mesh_memsize, 64);
     assert (purif->diis_vecs != NULL);
     assert (purif->F_vecs != NULL);
     purif->len_diis = 0;
-    purif->bmax = DBL_MIN;
+    purif->bmax= DBL_MIN;
     purif->bmax_id = -1;
     assert (MAX_DIIS > 1);
     for (int i = 0; i < LDBMAT; i++)
@@ -125,8 +122,8 @@ static void config_purif(purif_t *purif)
     allocate_tmpbuf(nrows, ncols, nr, nc, &(purif->tmpbuf));
     size_t memsize = (2.0 * MAX_DIIS + 14.0) * meshsize * sizeof (double);
 
-    purif->h  = (double*) _mm_malloc(2 * purif->ncols_purif * sizeof(double), 64);
-    purif->_h = (double*) _mm_malloc(2 * purif->ncols_purif * sizeof(double), 64);
+    purif->h  = (double*) aligned_malloc(2 * purif->ncols_purif * sizeof(double), 64);
+    purif->_h = (double*) aligned_malloc(2 * purif->ncols_purif * sizeof(double), 64);
 
 
     if (myrow == 0 && mycol == 0 && mygrd == 0)
@@ -203,17 +200,17 @@ void destroy_purif(purif_t * purif)
         MPI_Comm_free(&(purif->comm_purif_row));
         free(purif->nr_purif);
         free(purif->nc_purif);
-        _mm_free(purif->H_block);
-        _mm_free(purif->X_block);
-        _mm_free(purif->S_block);
-        _mm_free(purif->F_block);
-        _mm_free(purif->D_block);
-        _mm_free(purif->D3_block);
-        _mm_free(purif->D2_block);
-        _mm_free(purif->F_vecs);
-        _mm_free(purif->diis_vecs);
-        _mm_free(purif->h);
-        _mm_free(purif->_h);
+        aligned_free(purif->H_block);
+        aligned_free(purif->X_block);
+        aligned_free(purif->S_block);
+        aligned_free(purif->F_block);
+        aligned_free(purif->D_block);
+        aligned_free(purif->D3_block);
+        aligned_free(purif->D2_block);
+        aligned_free(purif->F_vecs);
+        aligned_free(purif->diis_vecs);
+        aligned_free(purif->h);
+        aligned_free(purif->_h);
     }
     free(purif);
 }
@@ -562,8 +559,10 @@ void compute_diis(PFock_t pfock, purif_t * purif, double *D_block, double *F_blo
                 // coeffs = inv(b_mat) * rhs;
                 if (myrank == 0) {
                     int sizeb = purif->len_diis + 1;
-                    __declspec(align (64)) double b_inv[LDBMAT * LDBMAT];
-                    __declspec(align (64)) int ipiv[LDBMAT];
+                    /* __declspec(align (64)) double b_inv[LDBMAT * LDBMAT]; */
+                    double b_inv[LDBMAT * LDBMAT] __attribute__((aligned(64)));
+                    /* __declspec(align (64)) int ipiv[LDBMAT]; */
+                    int ipiv[LDBMAT] __attribute__((aligned(64)));
                     memcpy(b_inv, b_mat, LDBMAT * LDBMAT * sizeof (double));
                     LAPACKE_dgetrf(LAPACK_ROW_MAJOR, sizeb, sizeb, b_inv,
                                    LDBMAT, ipiv);
@@ -629,9 +628,9 @@ static void peig(int ga_A, int ga_B, int n, int nprow, int npcol, double *eval)
     descinit_(descA, &n, &n, &nb, &nb, &izero, &izero, &ictxt, &itemp, &info);
     descinit_(descZ, &n, &n, &nb, &nb, &izero, &izero, &ictxt, &itemp, &info);
     int blocksize = nrows * ncols;
-    double *A = (double *)_mm_malloc(blocksize * sizeof (double), 64);
+    double *A = (double *)aligned_malloc(blocksize * sizeof (double), 64);
     assert (A != NULL);
-    double *Z = (double *)_mm_malloc(blocksize * sizeof (double), 64);
+    double *Z = (double *)aligned_malloc(blocksize * sizeof (double), 64);
     assert (Z != NULL);
 
     // distribute source matrix
@@ -666,7 +665,7 @@ static void peig(int ga_A, int ga_B, int n, int nprow, int npcol, double *eval)
 
     double t1 = MPI_Wtime();
     // inquire working space
-    double *work = (double *)_mm_malloc(2 * sizeof (double), 64);
+    double *work = (double *)aligned_malloc(2 * sizeof (double), 64);
     assert (work != NULL);
     int lwork = -1;
 #if 0
@@ -674,7 +673,7 @@ static void peig(int ga_A, int ga_B, int n, int nprow, int npcol, double *eval)
             eval, Z, &ione, &ione, descZ, work, &lwork, &info);
 #else
     int liwork = -1;
-    int *iwork = (int *)_mm_malloc(2 * sizeof (int), 64);
+    int *iwork = (int *)aligned_malloc(2 * sizeof (int), 64);
     assert(iwork != NULL);
     pdsyevd_("V", "U", &n, A, &ione, &ione, descA,
             eval, Z, &ione, &ione, descZ,
@@ -683,16 +682,16 @@ static void peig(int ga_A, int ga_B, int n, int nprow, int npcol, double *eval)
 
     // compute eigenvalues and eigenvectors
     lwork = (int)work[0] * 2;
-    _mm_free(work);
-    work = (double *)_mm_malloc(lwork * sizeof (double), 64);
+    aligned_free(work);
+    work = (double *)aligned_malloc(lwork * sizeof (double), 64);
     assert(work != NULL);
 #if 0
     pdsyev ("V", "U", &n, A, &ione, &ione, descA,
             eval, Z, &ione, &ione, descZ, work, &lwork, &info);
 #else
     liwork = (int)iwork[0];
-    _mm_free(iwork);
-    iwork = (int *)_mm_malloc(liwork * sizeof (int), 64);
+    aligned_free(iwork);
+    iwork = (int *)aligned_malloc(liwork * sizeof (int), 64);
     assert(iwork != NULL);
     pdsyevd_("V", "U", &n, A, &ione, &ione, descA,
             eval, Z, &ione, &ione, descZ,
@@ -734,9 +733,9 @@ static void peig(int ga_A, int ga_B, int n, int nprow, int npcol, double *eval)
 #endif
     GA_Sync();
 
-    _mm_free(A);
-    _mm_free(Z);
-    _mm_free(work);
+    aligned_free(A);
+    aligned_free(Z);
+    aligned_free(work);
 
     Cblacs_gridexit(ictxt);
 }
@@ -761,7 +760,7 @@ void compute_eigensolve(int ga_tmp, purif_t * purif, double *F_block, int nprow,
         NGA_Put(myga, lo, hi, F_block, &ld);
     }
 
-    double *eval = (double *)_mm_malloc(nbf * sizeof (double), 64);
+    double *eval = (double *)aligned_malloc(nbf * sizeof (double), 64);
     assert(eval != NULL);
     peig(myga, myga2, nbf, nprow, npcol, eval);
 
@@ -777,7 +776,7 @@ void compute_eigensolve(int ga_tmp, purif_t * purif, double *F_block, int nprow,
 
     GA_Destroy(myga);
     GA_Destroy(myga2);
-    _mm_free(eval);
+    aligned_free(eval);
 }
 
 #endif

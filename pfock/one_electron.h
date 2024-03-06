@@ -27,8 +27,9 @@ extern int indxg2l_(int *indxglob, int *nb, int *iproc, int *isrcproc, int *npro
 
 extern int indxl2g_(int *indxlocal, int *nb, int *iproc, int *isrcproc, int *nprocs);
 
+// TODO: determine why these are here...
 /* extern int numroc_(int *n, int *nb, int *iproc, int *isrcproc, int *nprocs); */
-/*  */
+
 /* extern void descinit_(int *desc, int *m, int *n, int *mb, int *nb, */
 /*                       int *irsrc, int *icsrc, int *ictxt, int *lld, */
 /*                       int *info); */

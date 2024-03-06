@@ -10,7 +10,8 @@ set(CMAKE_C_COMPILER ${MPICC})
 
 # Add compile options and definitions based on the configuration in make.in
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CFLAGS}")
-set(CMAKE_C_FLAGS " -O3 -Wall -qopenmp -std=gnu99 -fasm-blocks -g -xHost -Wunknown-pragmas -Wunused-variable  -diag-disable=10441")
+# set(CMAKE_C_FLAGS " -O3 -Wall -qopenmp -std=gnu99 -fasm-blocks -g -xHost -Wunknown-pragmas -Wunused-variable  -diag-disable=10441")
+set(CMAKE_C_FLAGS " -O3 -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable")
 
 # Add preprocessor definitions
 if(DYNAMIC EQUAL "1")

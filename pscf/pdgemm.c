@@ -9,11 +9,8 @@
 #include <sys/time.h>
 #include <omp.h>
 
-#include <malloc.h>
-#include <mm_malloc.h>
-
-
 #include "pdgemm.h"
+#include "aligned_malloc.h"
 
 static void copyMat(int m, int n, double *From, int ldfrom, double *To, int ldto)
 {
@@ -22,14 +19,14 @@ static void copyMat(int m, int n, double *From, int ldfrom, double *To, int ldto
         memcpy(To + r * ldto, From + r * ldfrom, sizeof(double) * n);
 }
 
-static double get_wtime_sec()
-{
-    double sec;
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    sec = tv.tv_sec + (double) tv.tv_usec / 1000000.0;
-    return sec;
-}
+/* static double get_wtime_sec() */
+/* { */
+/*     double sec; */
+/*     struct timeval tv; */
+/*     gettimeofday(&tv, NULL); */
+/*     sec = tv.tv_sec + (double) tv.tv_usec / 1000000.0; */
+/*     return sec; */
+/* } */
 
 static void ReduceTo2D(
     int myrow, int mycol, int mygrd,
@@ -516,7 +513,7 @@ void allocate_tmpbuf(int nrows, int ncols, int *nr, int *nc, tmpbuf_t *tmpbuf)
     assert (ncols0 >= ncols && nrows0 >= nrows);
 
     int block_size_align64b = (nrows0 * ncols0 + 7) / 8 * 8;
-    tmpbuf->A   = (double *) _mm_malloc(sizeof(double) * block_size_align64b * 6, 64);
+    tmpbuf->A   = (double *) aligned_malloc(sizeof(double) * block_size_align64b * 6, 64);
     tmpbuf->S   = tmpbuf->A   + block_size_align64b;
     tmpbuf->C   = tmpbuf->S   + block_size_align64b;
     tmpbuf->A_i = tmpbuf->C   + block_size_align64b;
@@ -538,5 +535,5 @@ void allocate_tmpbuf(int nrows, int ncols, int *nr, int *nc, tmpbuf_t *tmpbuf)
 
 void dealloc_tmpbuf(tmpbuf_t *tmpbuf)
 {
-    _mm_free(tmpbuf->A);
+    aligned_free(tmpbuf->A);
 }

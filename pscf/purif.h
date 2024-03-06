@@ -63,10 +63,11 @@ typedef struct _purif_t
     int len_diis;
     double *diis_vecs;
     double *F_vecs;
-    __declspec (align (64)) double b_mat[LDBMAT * LDBMAT]; // only on rank 0
+    /* __declspec (align (64)) double b_mat[LDBMAT * LDBMAT]; // only on rank 0 */
+    double b_mat[LDBMAT * LDBMAT] __attribute__((aligned(64)));
     int bmax_id;
     double bmax; // only on rank 0
-	
+
     double *h;
     double *_h;
 
