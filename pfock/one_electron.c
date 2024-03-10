@@ -151,11 +151,9 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     printf("  myrow = %d, mycol = %d\n", myrow, mycol);
 
     // init matrices
-    // int nrows = numroc_(&n, &nb, &myrow, &izero, &nprow);
-    int nrows = numroc_(n, nb, myrow, izero, nprow);
+    int nrows = numroc_(&n, &nb, &myrow, &izero, &nprow);
     printf("  nrows = %d\n", nrows);
-    // int ncols = numroc_(&n, &nb, &mycol, &izero, &npcol);
-    int ncols = numroc_(n, nb, mycol, izero, npcol);
+    int ncols = numroc_(&n, &nb, &mycol, &izero, &npcol);
     printf("  ncols = %d\n", ncols);
     int itemp = nrows > 1 ? nrows : 1;
     descinit_(descA, &n, &n, &nb, &nb, &izero, &izero, &ictxt, &itemp, &info);
