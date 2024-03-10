@@ -63,7 +63,6 @@ target_include_directories(pscf
     ${CMAKE_SOURCE_DIR}/aligned_malloc
 )
 
-
 target_link_libraries(pscf
     pfock
     aligned_malloc
@@ -75,8 +74,6 @@ target_link_libraries(pscf
     ${MPI_C_LIBRARIES}
     $ENV{CONDA_PREFIX}/include
 )
-
-
 
 # Clean-up command (handled automatically by CMake)
 set_property(DIRECTORY PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "*.s;*.d;*~")

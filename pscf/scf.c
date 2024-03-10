@@ -237,8 +237,8 @@ int main (int argc, char **argv)
     int provided;
     MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-    printf("Rank %d of %d\n", myrank, nprocs);
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+    printf("Rank %d of %d\n", myrank, nprocs);
     if (myrank == 0)  {
         printf("MPI level: %d\n", provided);
     }
@@ -261,6 +261,7 @@ int main (int argc, char **argv)
     int natoms;
     int nfunctions;
     int niters;
+    int btmp[8];
     if (myrank == 0) {
         if (argc != 8) {
             usage(argv[0]);
@@ -302,16 +303,15 @@ int main (int argc, char **argv)
                nblks_fock * nprow_fock, nblks_fock * nprow_fock);
         int nthreads = omp_get_max_threads();
         printf("  #nthreads_cpu = %d\n", nthreads);
+        btmp[0] = nprow_fock;
+        btmp[1] = npcol_fock;
+        btmp[2] = nprow_purif;
+        btmp[3] = nblks_fock;
+        btmp[4] = niters;
+        btmp[5] = natoms;
+        btmp[6] = nshells;
+        btmp[7] = nfunctions;
     }
-    int btmp[8];
-    btmp[0] = nprow_fock;
-    btmp[1] = npcol_fock;
-    btmp[2] = nprow_purif;
-    btmp[3] = nblks_fock;
-    btmp[4] = niters;
-    btmp[5] = natoms;
-    btmp[6] = nshells;
-    btmp[7] = nfunctions;
     MPI_Bcast(btmp, 8, MPI_INT, 0, MPI_COMM_WORLD);
     nprow_fock = btmp[0];
     npcol_fock = btmp[1];

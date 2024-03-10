@@ -177,7 +177,7 @@ int schwartz_screening(PFock_t pfock, BasisSet_t basis)
             double maxvalue = sq_values_M[N];
             if (maxvalue > eta) 
             {
-                if (M > N && (M + N) % 2 == 1 || M < N && (M + N) % 2 == 0)  continue;
+                if ((M > N && (M + N) % 2 == 1) || (M < N && (M + N) % 2 == 0))  continue;
                 else nnz++;
             }
         }
@@ -224,7 +224,7 @@ int schwartz_screening(PFock_t pfock, BasisSet_t basis)
                 maxvalue = sq_values_A[B];
                 if (maxvalue > eta) 
                 {
-                    if (A > B && (A + B) % 2 == 1 || A < B && (A + B) % 2 == 0) continue;
+                    if ((A > B && (A + B) % 2 == 1) || (A < B && (A + B) % 2 == 0)) continue;
                     
                     // Don't need to change the shellvalue, since it is the same for (AB) and (BA)
                     if (A == B) 
@@ -259,7 +259,7 @@ int schwartz_screening(PFock_t pfock, BasisSet_t basis)
                 maxvalue = sq_values_A[B];
                 if (maxvalue > eta) 
                 {
-                    if (A > B && (A + B) % 2 == 1 || A < B && (A + B) % 2 == 0) continue;
+                    if ((A > B && (A + B) % 2 == 1) || (A < B && (A + B) % 2 == 0)) continue;
                     if (A == B) {
                         pfock->shellvalue[nnz] = maxvalue;                       
                     } else {
