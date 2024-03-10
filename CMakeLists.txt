@@ -22,7 +22,7 @@ message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 
 # Libraries
 set(BLAS_LIBS "-lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm")
-set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64")
+set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -libmkl_blacs_openmpi_ilp64")
 
 # message(STATUS "CInt_INCLUDE_DIRS: ${CInt_INCLUDE_DIRS}")
 # message(STATUS "CInt_LIBRARIES: ${CInt_LIBRARIES}")

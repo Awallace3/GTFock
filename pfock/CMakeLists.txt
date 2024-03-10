@@ -16,6 +16,9 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include")
 endif()
 
+set(BLAS_LIBS "-lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm")
+set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64")
+
 # Include directories
 include_directories(
     ${MPI_C_INCLUDE_PATH}  # This line might now be redundant with target_include_directories
@@ -42,8 +45,8 @@ file(GLOB SRC "*.c")
 add_library(pfock STATIC ${SRC})
 
 # Ensure MPI is properly linked
-target_include_directories(pfock PUBLIC ${MPI_C_INCLUDE_PATH})
-target_link_libraries(pfock PUBLIC MPI::MPI_C)
+target_include_directories(pfock PUBLIC ${MPI_C_INCLUDE_PATH} {BLAS_LIBS} {SCALAPACK_LIBS})
+target_link_libraries(pfock PUBLIC MPI::MPI_C ${BLAS_LIBS} ${SCALAPACK_LIBS})
 
 # Post-build command to copy the library and header file to a 'install' directory
 add_custom_command(TARGET pfock POST_BUILD

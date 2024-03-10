@@ -9,51 +9,8 @@
 
 #include "config.h"
 #include "one_electron.h"
-#include "aligned_malloc.h"
 
 #include "GTMatrix.h"
-
-/* #define aligned_malloc  malloc */
-/* #define aligned_free  free */
-
-// USER DEFINED aligned_malloc
-/* void* aligned_malloc(size_t size, size_t alignment) { */
-/*     if (alignment & (alignment - 1)) { */
-/*         // The alignment must be a power of two */
-/*         fprintf(stderr, "Alignment must be a power of two.\n"); */
-/*         return NULL; */
-/*     } */
-/*  */
-/*     if (alignment < sizeof(void*)) { */
-/*         // The alignment must be at least the size of a pointer */
-/*         alignment = sizeof(void*); */
-/*     } */
-/*  */
-/*     void* original = NULL; */
-/*     void* aligned = NULL; */
-/*  */
-/*     // Allocate extra memory to ensure we can align the memory and store the offset */
-/*     original = malloc(size + alignment + sizeof(void*)); */
-/*     if (original) { */
-/*         // Calculate the aligned memory address */
-/*         aligned = (void*)(((size_t)original + sizeof(void*) + alignment - 1) & ~(alignment - 1)); */
-/*         // Store the original pointer just before the aligned address */
-/*         *((void**)((size_t)aligned - sizeof(void*))) = original; */
-/*     } */
-/*  */
-/*     return aligned; */
-/* } */
-/*  */
-/* void aligned_free(void* ptr) { */
-/*     if (!ptr) { */
-/*         // Handle NULL pointer */
-/*         return; */
-/*     } */
-/*  */
-/*     // Retrieve the original pointer which was stored just before the aligned address */
-/*     void* original = *((void**)((size_t)ptr - sizeof(void*))); */
-/*     free(original); */
-/* } */
 
 inline void matrix_block_write(double *matrix, int startrow,
                                int startcol, int ldm,
@@ -127,7 +84,7 @@ void compute_H(PFock_t pfock, BasisSet_t basis,
 //  for (int i = 0; i < nthreads; i++) {
 //      CInt_createOED(basis, &(oed[i]));
 //  }
-
+    
     int start_row_id = pfock->f_startind[startshellrow];
     int start_col_id = pfock->f_startind[startshellcol];
     #pragma omp parallel
@@ -184,18 +141,22 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     // init blacs
     int nb = MIN(n / nprow, n / npcol);
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-    printf("Cblacs_pinfo\n");
+    printf("  myrank = %d\n", myrank);
     Cblacs_pinfo(&nn, &mm);
-    printf("Cblacs_get\n");
+    printf("  n = %d, nn = %d, mm = %d\n", n, nn, mm);
     Cblacs_get(-1, 0, &ictxt);
     Cblacs_gridinit(&ictxt, "Row", nprow, npcol);
     Cblacs_gridinfo(ictxt, &nprow, &npcol, &myrow, &mycol);
-    printf("myrank = %d, myrow = %d, mycol = %d\n", myrank, myrow, mycol);
+
+    printf("  myrow = %d, mycol = %d\n", myrow, mycol);
 
     // init matrices
-
-    int nrows = numroc_(&n, &nb, &myrow, &izero, &nprow);
-    int ncols = numroc_(&n, &nb, &mycol, &izero, &npcol);
+    // int nrows = numroc_(&n, &nb, &myrow, &izero, &nprow);
+    int nrows = numroc_(n, nb, myrow, izero, nprow);
+    printf("  nrows = %d\n", nrows);
+    // int ncols = numroc_(&n, &nb, &mycol, &izero, &npcol);
+    int ncols = numroc_(n, nb, mycol, izero, npcol);
+    printf("  ncols = %d\n", ncols);
     int itemp = nrows > 1 ? nrows : 1;
     descinit_(descA, &n, &n, &nb, &nb, &izero, &izero, &ictxt, &itemp, &info);
     descinit_(descZ, &n, &n, &nb, &nb, &izero, &izero, &ictxt, &itemp, &info);
@@ -203,38 +164,38 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     double *A = (double *)aligned_malloc(blocksize * sizeof (double), 64);
     double *Z = (double *)aligned_malloc(blocksize * sizeof (double), 64);
     assert(Z != NULL && A != NULL);
-    printf("Initialized matrices\n");
+
+    printf("init matrices\n");
 
     // distribute source matrix
     GTM_startBatchGet(gtm_A);
-    for (int i = 1; i <= nrows; i += nb)
+    for (int i = 1; i <= nrows; i += nb) 
     {
         lo[0] = indxl2g_(&i, &nb, &myrow, &izero, &nprow) - 1;
         hi[0] = lo[0] + nb - 1;
         hi[0] = hi[0] >= n ? n - 1 : hi[0];
-        for (int j = 1; j <= ncols; j += nb)
+        for (int j = 1; j <= ncols; j += nb) 
         {
             lo[1] = indxl2g_(&j, &nb, &mycol, &izero, &npcol) - 1;
             hi[1] = lo[1] + nb - 1;
             hi[1] = hi[1] >= n ? n - 1 : hi[1];
             ld = ncols;
             GTM_addGetBlockRequest(
-                gtm_A,
+                gtm_A, 
                 lo[0], hi[0] - lo[0] + 1,
                 lo[1], hi[1] - lo[1] + 1,
                 &(Z[(i - 1) * ncols + j - 1]), ld
             );
         }
     }
-    printf("Added get block requests\n");
     GTM_execBatchGet(gtm_A);
     GTM_stopBatchGet(gtm_A);
     GTM_sync(gtm_A);
-
-    for (int i = 0; i < nrows; i++)
+    
+    for (int i = 0; i < nrows; i++) 
     {
         #pragma omp simd
-        for (int j = 0; j < ncols; j++)
+        for (int j = 0; j < ncols; j++) 
             A[j * nrows + i] = Z[i * ncols + j];
     }
 
@@ -252,7 +213,7 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     assert(iwork != NULL);
     pdsyevd_("V", "U", &n, A, &ione, &ione, descA,
             eval, Z, &ione, &ione, descZ,
-            work, &lwork, iwork, &liwork, &info);
+            work, &lwork, iwork, &liwork, &info);    
 #endif
 
     // compute eigenvalues and eigenvectors
@@ -270,32 +231,32 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     assert(iwork != NULL);
     pdsyevd_("V", "U", &n, A, &ione, &ione, descA,
             eval, Z, &ione, &ione, descZ,
-            work, &lwork, iwork, &liwork, &info);
+            work, &lwork, iwork, &liwork, &info); 
 #endif
     double t2 = MPI_Wtime();
     if (myrank == 0) printf("  pdsyev_ takes %.3lf secs\n", t2 - t1);
 
     // store desination matrix
-    for (int i = 0; i < nrows; i++)
+    for (int i = 0; i < nrows; i++) 
     {
         for (int j = 0; j < ncols; j++)
             A[i * ncols + j] = Z[j * nrows + i];
     }
-
+    
     GTM_startBatchPut(gtm_B);
-    for (int i = 1; i <= nrows; i += nb)
+    for (int i = 1; i <= nrows; i += nb) 
     {
         lo[0] = indxl2g_ (&i, &nb, &myrow, &izero, &nprow) - 1;
         hi[0] = lo[0] + nb - 1;
         hi[0] = hi[0] >= n ? n - 1 : hi[0];
-        for (int j = 1; j <= ncols; j += nb)
+        for (int j = 1; j <= ncols; j += nb) 
         {
             lo[1] = indxl2g_ (&j, &nb, &mycol, &izero, &npcol) - 1;
             hi[1] = lo[1] + nb - 1;
             hi[1] = hi[1] >= n ? n - 1 : hi[1];
             ld = ncols;
             GTM_addPutBlockRequest(
-                gtm_B,
+                gtm_B, 
                 lo[0], hi[0] - lo[0] + 1,
                 lo[1], hi[1] - lo[1] + 1,
                 &(A[(i - 1) * ncols + j - 1]), ld

@@ -3,6 +3,8 @@ rm -rf build
 mkdir -p build
 # export AR=xiar rcs
 
+export CFLAGS=""
+
 export SIMINT_LIBRARY_DIR=$PWD/../simint/build-avx512/install
 export LIBCINT_LIBRARY_DIR=$PWD/../libcint/share/cmake/CInt
 export GTMATRIX_LIBRARY_DIR=$PWD/../GTMatrix/share/cmake/GTMatrix

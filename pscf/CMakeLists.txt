@@ -33,8 +33,10 @@ endif()
 file(GLOB SRC "*.c")
 
 # Libraries
-set(BLAS_LIBS "-lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm")
-set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64")
+# set(BLAS_LIBS "-lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm")
+set(BLAS_LIBS "-lmkl_gf_lp64 -lmkl_core -lmkl_gnu_thread -lpthread -lm")
+# set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64")
+set(SCALAPACK_LIBS "-lmkl_scalapack_ilp64 -lmkl_blacs_openmpi_ilp64")
 
 add_executable(pscf ${SRC})
 
@@ -80,6 +82,7 @@ target_link_libraries(pscf
     ${SCALAPACK_LIBS}
     ${MPI_C_LIBRARIES}
     $ENV{CONDA_PREFIX}/include
+    $ENV{CONDA_PREFIX}/lib
 )
 
 # Clean-up command (handled automatically by CMake)
