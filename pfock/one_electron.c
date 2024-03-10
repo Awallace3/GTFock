@@ -186,6 +186,7 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     printf("Cblacs_pinfo\n");
     Cblacs_pinfo(&nn, &mm);
+    printf("Cblacs_get\n");
     Cblacs_get(-1, 0, &ictxt);
     Cblacs_gridinit(&ictxt, "Row", nprow, npcol);
     Cblacs_gridinfo(ictxt, &nprow, &npcol, &myrow, &mycol);
