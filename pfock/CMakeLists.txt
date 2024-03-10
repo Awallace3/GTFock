@@ -7,8 +7,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Find MPI
 find_package(MPI REQUIRED)
 
-# Add compile options and definitions based on the configuration in make.in
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I${CONDA_PREFIX}/include")
+if(CMAKE_BUILD_TYPE STREQUAL "DEBUG" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+  message(STATUS "DEBUG MODE")
+  add_definitions(-DDEBUG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include")
+else()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include -ftree-vectorize")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include")
+endif()
 
 # Include directories
 include_directories(

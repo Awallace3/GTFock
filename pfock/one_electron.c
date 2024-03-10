@@ -184,10 +184,12 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     // init blacs
     int nb = MIN(n / nprow, n / npcol);
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+    printf("Cblacs_pinfo\n");
     Cblacs_pinfo(&nn, &mm);
     Cblacs_get(-1, 0, &ictxt);
     Cblacs_gridinit(&ictxt, "Row", nprow, npcol);
     Cblacs_gridinfo(ictxt, &nprow, &npcol, &myrow, &mycol);
+    printf("myrank = %d, myrow = %d, mycol = %d\n", myrank, myrow, mycol);
 
     // init matrices
 
@@ -200,6 +202,7 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     double *A = (double *)aligned_malloc(blocksize * sizeof (double), 64);
     double *Z = (double *)aligned_malloc(blocksize * sizeof (double), 64);
     assert(Z != NULL && A != NULL);
+    printf("Initialized matrices\n");
 
     // distribute source matrix
     GTM_startBatchGet(gtm_A);
@@ -222,6 +225,7 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
             );
         }
     }
+    printf("Added get block requests\n");
     GTM_execBatchGet(gtm_A);
     GTM_stopBatchGet(gtm_A);
     GTM_sync(gtm_A);

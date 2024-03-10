@@ -227,7 +227,7 @@ void destroy_purif(purif_t * purif)
 
 int compute_purification(purif_t * purif, double *F_block, double *D_block)
 {
-    int it;
+    int it = 0;
     purif->timedgemm  = 0.0;
     purif->timepdgemm = 0.0;
     purif->timepass = 0.0;

@@ -10,12 +10,15 @@ find_package(GTMatrix REQUIRED)
 
 # Compiler options
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -qopenmp -std=gnu99 -fasm-blocks -g -xHost -Wunknown-pragmas -Wunused-variable")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include -ftree-vectorize")
-message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "DEBUG" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
   # Add debug-specific configurations
+  message(STATUS "DEBUG MODE")
   add_definitions(-DDEBUG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include")
+else()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include -ftree-vectorize")
 endif()
+message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 
 # Libraries
 set(BLAS_LIBS "-lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm")

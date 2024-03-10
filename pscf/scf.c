@@ -173,7 +173,7 @@ static void init_oedmat(BasisSet_t basis, PFock_t pfock,
     double t2;
     int ldx = purif->ldx;
 
-    MPI_Comm_rank (MPI_COMM_WORLD, &myrank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     if (myrank == 0) {
         printf ("Preprocessing one electron matrices ...\n");
     }
@@ -186,10 +186,13 @@ static void init_oedmat(BasisSet_t basis, PFock_t pfock,
 
     // compute S and X
     if (myrank == 0) {
-        printf("  Computing S and X\n");
+        printf("  Computing S and X, rank=0\n");
     }
+    printf("MPI_wtime\n");
     t1 = MPI_Wtime();
+    printf("MPI_wtime after\n");
     PFock_createOvlMat(pfock, basis);
+    printf("PFock_createOvlMat after\n");
     if (purif->runpurif == 1)
     {
         PFock_getOvlMat(pfock, srow_purif, erow_purif, scol_purif, ecol_purif,

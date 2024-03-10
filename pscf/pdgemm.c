@@ -19,14 +19,14 @@ static void copyMat(int m, int n, double *From, int ldfrom, double *To, int ldto
         memcpy(To + r * ldto, From + r * ldfrom, sizeof(double) * n);
 }
 
-/* static double get_wtime_sec() */
-/* { */
-/*     double sec; */
-/*     struct timeval tv; */
-/*     gettimeofday(&tv, NULL); */
-/*     sec = tv.tv_sec + (double) tv.tv_usec / 1000000.0; */
-/*     return sec; */
-/* } */
+static double get_wtime_sec() 
+{
+    double sec; 
+    struct timeval tv; 
+    gettimeofday(&tv, NULL); 
+    sec = tv.tv_sec + (double) tv.tv_usec / 1000000.0; 
+    return sec; 
+} 
 
 static void ReduceTo2D(
     int myrow, int mycol, int mygrd,

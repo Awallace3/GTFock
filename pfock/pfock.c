@@ -608,13 +608,16 @@ PFockStatus_t PFock_create(BasisSet_t basis, int nprow, int npcol, int ntasks,
 	init_mallopt();
 
     // allocate pfock
+    printf("PFock_t size: %lu\n", sizeof(struct PFock));
     PFock_t pfock = (PFock_t)PFOCK_MALLOC(sizeof(struct PFock));
     if (NULL == pfock) {
         PFOCK_PRINTF(1, "Failed to allocate memory: %lld\n",
             sizeof(struct PFock));
         return PFOCK_STATUS_ALLOC_FAILED;
     }
-    memset(pfock, 0, sizeof(PFock_t));
+    PFOCK_PRINTF(1, "PFock memory: %lld\n", sizeof(struct PFock));
+    // memset(pfock, 0, sizeof(PFock_t));
+    memset(pfock, 0, sizeof(struct PFock));
 
     // check if MPI is initialized
     int flag;
@@ -1167,9 +1170,11 @@ PFockStatus_t PFock_createOvlMat(PFock_t pfock, BasisSet_t basis)
     compute_S(pfock, basis, pfock->sshell_row, pfock->eshell_row,
               pfock->sshell_col, pfock->eshell_col, stride, mat);
     GTM_sync(pfock->gtm_Smat);
+    printf("Compute S done\n");
 
     // (2) Compute X
     int nbf = CInt_getNumFuncs(basis);
+    printf("nbf = %d\n", nbf);
     double *eval = (double *)malloc(nbf * sizeof (double));
     if (NULL == eval)
     {
@@ -1178,6 +1183,7 @@ PFockStatus_t PFock_createOvlMat(PFock_t pfock, BasisSet_t basis)
     }
 
     my_peig(pfock->gtm_Smat, pfock->gtm_tmp1, nbf, pfock->nprow, pfock->npcol, eval);
+    printf("my_peig done\n");
 
     GTMatrix_t gtm_tmp1 = pfock->gtm_tmp1;
     GTMatrix_t gtm_tmp2 = pfock->gtm_tmp2;
@@ -1190,6 +1196,8 @@ PFockStatus_t PFock_createOvlMat(PFock_t pfock, BasisSet_t basis)
 
     double *lambda_vector = (double *)malloc(nfuncs_col * sizeof (double));
     assert (lambda_vector != NULL);
+
+    printf("  omp simd pragma\n");
 
     #pragma omp simd
     for (int j = 0; j < nfuncs_col; j++)
@@ -1252,6 +1260,7 @@ PFockStatus_t PFock_createOvlMat(PFock_t pfock, BasisSet_t basis)
 
     GTM_destroy(pfock->gtm_tmp1);
     GTM_destroy(pfock->gtm_tmp2);
+    printf("  My PDGEMM used time = %lf (s)\n", tmax);
 
     return PFOCK_STATUS_SUCCESS;
 }
