@@ -139,18 +139,27 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     int ione = 1;
 
     // init blacs
+    printf(" Starting nprow = %d, npcol = %d\n", nprow, npcol);
     int nb = MIN(n / nprow, n / npcol);
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     printf("  myrank = %d\n", myrank);
     Cblacs_pinfo(&nn, &mm);
     printf("  n = %d, nn = %d, mm = %d\n", n, nn, mm);
+    // Cblacs_get(-1, 0, &ictxt);
     Cblacs_get(-1, 0, &ictxt);
-    Cblacs_gridinit(&ictxt, "Row", nprow, npcol);
+    Cblacs_gridinit(&ictxt, "Row-major", nprow, npcol);
     Cblacs_gridinfo(ictxt, &nprow, &npcol, &myrow, &mycol);
+    Cblacs_pcoord(ictxt, myrank, &myrow, &mycol);
 
-    printf("  myrow = %d, mycol = %d\n", myrow, mycol);
+    int world_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
+
+    // nprow = 1;
+    printf(" n = %d, nb = %d, myrow = %d, izero = %d, nprow = %d, npcol = %d\n", n, nb, myrow, izero, nprow, npcol);
 
     // init matrices
+    // issue is that nprow is 0, should be the NPROCS in the grid
     int nrows = numroc_(&n, &nb, &myrow, &izero, &nprow);
     printf("  nrows = %d\n", nrows);
     int ncols = numroc_(&n, &nb, &mycol, &izero, &npcol);
@@ -186,9 +195,11 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
             );
         }
     }
+    printf("exec batch get\n");
     GTM_execBatchGet(gtm_A);
     GTM_stopBatchGet(gtm_A);
     GTM_sync(gtm_A);
+    printf("GTM_synced\n");
     
     for (int i = 0; i < nrows; i++) 
     {
@@ -215,6 +226,7 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
 #endif
 
     // compute eigenvalues and eigenvectors
+    printf("Computing eigenvalues and eigenvectors\n");
     lwork = (int)work[0] * 2;
     aligned_free(work);
     work = (double *)aligned_malloc(lwork * sizeof (double), 64);
@@ -264,10 +276,12 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     GTM_execBatchPut(gtm_B);
     GTM_stopBatchPut(gtm_B);
     GTM_sync(gtm_B);
+    printf("aligned_free\n");
 
     aligned_free(A);
     aligned_free(Z);
     aligned_free(work);
 
     Cblacs_gridexit(ictxt);
+    printf("  gridexit\n");
 }

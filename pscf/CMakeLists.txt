@@ -34,9 +34,9 @@ file(GLOB SRC "*.c")
 
 # Libraries
 # set(BLAS_LIBS "-lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm")
-set(BLAS_LIBS "-lmkl_gf_lp64 -lmkl_core -lmkl_gnu_thread -lpthread -lm")
+set(BLAS_LIBS "-lmkl_intel_lp64 -lmkl_core -lmkl_gnu_thread -lpthread -lm")
 # set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64")
-set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_ilp64")
+set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lmkl_blacs_openmpi_lp64")
 
 add_executable(pscf ${SRC})
 
