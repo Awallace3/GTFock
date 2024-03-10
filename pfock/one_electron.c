@@ -129,13 +129,13 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     int mycol;
     int nn;
     int mm;
-    int izero = 0;
     int descA[9];
     int descZ[9];
     int info;
     int lo[2];
     int hi[2];
     int ld;
+    int izero = 0;
     int ione = 1;
 
     // init blacs
@@ -156,7 +156,7 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
 
 
     // nprow = 1;
-    printf(" n = %d, nb = %d, myrow = %d, izero = %d, nprow = %d, npcol = %d\n", n, nb, myrow, izero, nprow, npcol);
+    printf(" n = %d, nb = %d, myrow = %d, nprow = %d, npcol = %d\n", n, nb, myrow, nprow, npcol);
 
     // init matrices
     // issue is that nprow is 0, should be the NPROCS in the grid
@@ -165,9 +165,14 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     int ncols = numroc_(&n, &nb, &mycol, &izero, &npcol);
     printf("  ncols = %d\n", ncols);
     int itemp = nrows > 1 ? nrows : 1;
+    // print values that go into descinit
+    printf(" descA: n = %d, nrows = %d, ncols = %d, nb = %d, nprow = %d, npcol = %d, izero = %d, ictxt = %d, itemp = %d, info = %d\n", n, nrows, ncols, nb, nprow, npcol, izero, ictxt, itemp, info);
+    // descinit_(descA, &n, &n, &nb, &nb, &izero, &izero, &ictxt, &itemp, &info);
+    // descinit_(descZ, &n, &n, &nb, &nb, &izero, &izero, &ictxt, &itemp, &info);
     descinit_(descA, &n, &n, &nb, &nb, &izero, &izero, &ictxt, &itemp, &info);
     descinit_(descZ, &n, &n, &nb, &nb, &izero, &izero, &ictxt, &itemp, &info);
     int blocksize = nrows * ncols;
+    printf("  blocksize = %d\n", blocksize);
     double *A = (double *)aligned_malloc(blocksize * sizeof (double), 64);
     double *Z = (double *)aligned_malloc(blocksize * sizeof (double), 64);
     assert(Z != NULL && A != NULL);
@@ -209,7 +214,7 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     }
 
     double t1 = MPI_Wtime();
-    // inquire working space
+    // acquire working space
     double *work = (double *)aligned_malloc(2 * sizeof (double), 64);
     assert (work != NULL);
     int lwork = -1;
@@ -220,17 +225,27 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     int liwork = -1;
     int *iwork = (int *)aligned_malloc(2 * sizeof (int), 64);
     assert(iwork != NULL);
+    // This call is used to determine the optimal work size
     pdsyevd_("V", "U", &n, A, &ione, &ione, descA,
             eval, Z, &ione, &ione, descZ,
             work, &lwork, iwork, &liwork, &info);    
 #endif
+    printf(" eval[0] = %lf\n", eval[0]);
 
     // compute eigenvalues and eigenvectors
     printf("Computing eigenvalues and eigenvectors\n");
+    printf("  lwork = %d, work[0] = %d\n", lwork, (int)work[0]);
     lwork = (int)work[0] * 2;
+    printf("  lwork = %d, work[0] = %d\n", lwork, (int)work[0]);
     aligned_free(work);
+    assert(work == NULL);
+
     work = (double *)aligned_malloc(lwork * sizeof (double), 64);
+    lwork = malloc_usable_size(work) / sizeof(double);
+    // need to update lwork in case of alignment size increase
+    
     assert(work != NULL);
+    printf("  lwork = %d\n", lwork);
 #if 0
     pdsyev ("V", "U", &n, A, &ione, &ione, descA,
             eval, Z, &ione, &ione, descZ, work, &lwork, &info);
@@ -238,11 +253,17 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     liwork = (int)iwork[0];
     aligned_free(iwork);
     iwork = (int *)aligned_malloc(liwork * sizeof (int), 64);
+    liwork = malloc_usable_size(iwork) / sizeof(int);
     assert(iwork != NULL);
+    int LOCp_q = ione + n - 1;
+    printf(" lwork = %d, liwork = %d\n", lwork, liwork);
+    printf(" LOCp_q(upper_index) = %d, max_elements = %d\n", LOCp_q, LOCp_q * LOCp_q);
+    printf("pdsyevd_ call\n");
     pdsyevd_("V", "U", &n, A, &ione, &ione, descA,
             eval, Z, &ione, &ione, descZ,
             work, &lwork, iwork, &liwork, &info); 
 #endif
+    printf("Computed eigenvalues and eigenvectors\n");
     double t2 = MPI_Wtime();
     if (myrank == 0) printf("  pdsyev_ takes %.3lf secs\n", t2 - t1);
 

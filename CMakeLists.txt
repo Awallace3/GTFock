@@ -7,6 +7,8 @@ find_package(MPI REQUIRED)
 find_package(simint REQUIRED)
 find_package(CInt REQUIRED)
 find_package(GTMatrix REQUIRED)
+find_package(erd REQUIRED)
+find_package(oed REQUIRED)
 
 # Compiler options
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -qopenmp -std=gnu99 -fasm-blocks -g -xHost -Wunknown-pragmas -Wunused-variable")
@@ -16,16 +18,15 @@ if(CMAKE_BUILD_TYPE STREQUAL "DEBUG" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInf
   add_definitions(-DDEBUG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include")
 else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include -ftree-vectorize")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include")
 endif()
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__SCF__")
 message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 
 # Libraries
-# set(BLAS_LIBS "-lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm")
-# set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -libmkl_blacs_openmpi_ilp64")
-
-# message(STATUS "CInt_INCLUDE_DIRS: ${CInt_INCLUDE_DIRS}")
-# message(STATUS "CInt_LIBRARIES: ${CInt_LIBRARIES}")
+# set(BLAS_LIBS "-lmkl_gf_lp64 -lmkl_core -lmkl_gnu_thread -lpthread -lm")
+set(BLAS_LIBS "-lmkl_gf_lp64 -lmkl_core -lmkl_gnu_thread -lm")
+set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64")
 
 # Include and link directories
 include_directories(
@@ -38,6 +39,8 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/aligned_malloc
     ${CMAKE_CURRENT_SOURCE_DIR}/pscf
     ${CMAKE_CURRENT_SOURCE_DIR}/pfock
+    ${ERD_INCLUDE_DIRS}
+    ${OED_INCLUDE_DIRS}
 )
 
 

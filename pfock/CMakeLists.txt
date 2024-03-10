@@ -12,21 +12,26 @@ if(CMAKE_BUILD_TYPE STREQUAL "DEBUG" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInf
   add_definitions(-DDEBUG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include")
 else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include -ftree-vectorize")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include")
 endif()
 
-set(BLAS_LIBS "-lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm")
-set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lmkl_blacs_openmpi_lp64")
+message(STATUS "pfock CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
+message(STATUS "pfock CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+
+# set(BLAS_LIBS "-lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm")
+# set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lmkl_blacs_openmpi_lp64")
 
 # Include directories
 include_directories(
-    ${MPI_C_INCLUDE_PATH}  # This line might now be redundant with target_include_directories
+    ${MPI_C_INCLUDE_PATH}
     ${simint_DIR}/include/simint
     ${CInt_INCLUDE_DIRS}
     ${GTMatrix_INCLUDE_DIRS}
     $ENV{CONDA_PREFIX}/include
     ${CMAKE_SOURCE_DIR}/aligned_malloc
+    ${ERD_INCLUDE_DIRS}
+    ${OED_INCLUDE_DIRS}
 )
 
 # Add preprocessor definitions
