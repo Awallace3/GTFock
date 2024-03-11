@@ -9,6 +9,7 @@ find_package(CInt REQUIRED)
 find_package(GTMatrix REQUIRED)
 find_package(erd REQUIRED)
 find_package(oed REQUIRED)
+find_package(BLAS REQUIRED)
 
 # Compiler options
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -qopenmp -std=gnu99 -fasm-blocks -g -xHost -Wunknown-pragmas -Wunused-variable")
@@ -25,7 +26,7 @@ message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 
 # Libraries
 # set(BLAS_LIBS "-lmkl_gf_lp64 -lmkl_core -lmkl_gnu_thread -lpthread -lm")
-set(BLAS_LIBS "-lmkl_gf_lp64 -lmkl_core -lmkl_gnu_thread -lm")
+set(BLAS_LIBS "-lblas -lmkl_gf_lp64 -lmkl_core -lmkl_gnu_thread -lm")
 set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64")
 
 # Include and link directories
