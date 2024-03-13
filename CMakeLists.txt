@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(GTFock)
+project(GTFock LANGUAGES C CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -18,16 +18,24 @@ if(CMAKE_BUILD_TYPE STREQUAL "DEBUG" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInf
   message(STATUS "DEBUG MODE")
   add_definitions(-DDEBUG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include")
 else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -fopenmp -std=gnu99 -g -Wunknown-pragmas -Wunused-variable -I$ENV{CONDA_PREFIX}/include")
 endif()
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__SCF__")
 message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 
 # Libraries
 # set(BLAS_LIBS "-lmkl_gf_lp64 -lmkl_core -lmkl_gnu_thread -lpthread -lm")
-set(BLAS_LIBS "-lblas -lmkl_gf_lp64 -lmkl_core -lmkl_gnu_thread -lm")
-set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64")
+
+message(STATUS "MKLROOT: ${MKLROOT}")
+set(BLAS_LIBS "-lmkl_gf_lp64")
+# set(BLAS_LIBS "-lblas -lmkl_gf_lp64 -lmkl_core -lmkl_gnu_thread -lm")
+# set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64")
+# set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lscalapackfx -lmpifx")
+set(SCALAPACK_LIBS "-m64  -L$ENV{CONDA_PREFIX}/lib -lmkl_scalapack_lp64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lmkl_blacs_openmpi_lp64 -lgomp -lpthread -lm -ldl")
+MESSAGE(STATUS "SCALAPACK_LIBS: ${SCALAPACK_LIBS}")
 
 # Include and link directories
 include_directories(

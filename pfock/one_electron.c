@@ -149,7 +149,7 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     Cblacs_get(-1, 0, &ictxt);
     Cblacs_gridinit(&ictxt, "Row-major", nprow, npcol);
     Cblacs_gridinfo(ictxt, &nprow, &npcol, &myrow, &mycol);
-    Cblacs_pcoord(ictxt, myrank, &myrow, &mycol);
+    // Cblacs_pcoord(ictxt, myrank, &myrow, &mycol);
 
     int world_size;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -241,7 +241,7 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     assert(work == NULL);
 
     work = (double *)aligned_malloc(lwork * sizeof (double), 64);
-    lwork = malloc_usable_size(work) / sizeof(double);
+    // lwork = malloc_usable_size(work) / sizeof(double);
     // need to update lwork in case of alignment size increase
     
     assert(work != NULL);
@@ -253,7 +253,7 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     liwork = (int)iwork[0];
     aligned_free(iwork);
     iwork = (int *)aligned_malloc(liwork * sizeof (int), 64);
-    liwork = malloc_usable_size(iwork) / sizeof(int);
+    // liwork = malloc_usable_size(iwork) / sizeof(int);
     assert(iwork != NULL);
     int LOCp_q = ione + n - 1;
     printf(" lwork = %d, liwork = %d\n", lwork, liwork);

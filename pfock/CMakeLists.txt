@@ -51,7 +51,7 @@ add_library(pfock STATIC ${SRC})
 
 # Ensure MPI is properly linked
 target_include_directories(pfock PUBLIC ${MPI_C_INCLUDE_PATH} {BLAS_LIBS} {SCALAPACK_LIBS})
-target_link_libraries(pfock PUBLIC MPI::MPI_C ${BLAS_LIBS} ${SCALAPACK_LIBS})
+target_link_libraries(pfock PUBLIC MPI::MPI_CXX ${BLAS_LIBS} ${SCALAPACK_LIBS})
 
 # Post-build command to copy the library and header file to a 'install' directory
 add_custom_command(TARGET pfock POST_BUILD

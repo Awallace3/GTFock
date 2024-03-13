@@ -16,6 +16,10 @@
 #include "purif.h"
 #include "aligned_malloc.h"
 
+// intel
+#include <float.h>
+// #include <limits>
+
 
 #define MAX_PURF_ITERS 200
 #define MIN(a, b)    ((a) < (b) ? (a) : (b))

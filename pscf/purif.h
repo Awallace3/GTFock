@@ -7,6 +7,9 @@
 #include "CInt.h"
 #include "pfock.h"
 #include "pdgemm.h"
+// intel
+#include <float.h>
+// #include <limits>
 
 
 #define MAX_DIIS 10
