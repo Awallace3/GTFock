@@ -475,10 +475,13 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     GTM_stopBatchPut(gtm_B);
     GTM_sync(gtm_B);
     printf("aligned_free\n");
+    // assert that gtm_B is not filled with zeros
+    assert(gtm_B->data[0] != 0.0);
+
+
     aligned_free(A);
     aligned_free(Z);
     aligned_free(work);
-    aligned_free(iwork);
 
     Cblacs_gridexit(ictxt);
 }

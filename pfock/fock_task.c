@@ -264,6 +264,7 @@ void init_block_buf(BasisSet_t _basis, PFock_t pfock)
 
         CInt_SIMINT_createThreadMultishellpair(&thread_multi_shellpairs[i]);
     }
+    printf("  Initialized Fock blocking buffers\n");
 }
 
 static inline void copy_matrix_block(

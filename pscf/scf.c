@@ -88,7 +88,11 @@ static void initial_guess(PFock_t pfock, BasisSet_t basis, int ispurif,
         for (int x = rowstart; x <= rowend; x++)
             #pragma omp simd
             for (int y = colstart; y <= colend; y++)
+        {
+
                 D_block[(x - rowstart) * ldD + (y - colstart)] *= R;
+            printf("D_block[%d] = %.16f\n", (x - rowstart) * ldD + (y - colstart), D_block[(x - rowstart) * ldD + (y - colstart)]);
+        }
     }
     GTM_sync(pfock->gtm_Dmat);
 }
@@ -106,6 +110,7 @@ static double compute_energy(purif_t * purif, double *F_block, double *D_block)
 
     if (1 == purif->runpurif)
     {
+        printf("compute_energy summing...\n");
         #pragma omp parallel for reduction(+: etmp)
         for (int i = 0; i < nrows; i++)
         {
@@ -380,6 +385,13 @@ int main (int argc, char **argv)
     initial_guess(pfock, basis, purif->runpurif,
                   rowstart, rowend, colstart, colend,
                   purif->D_block, purif->ldx);
+    if (myrank == 0) {
+        int nbf = pfock->nbf;
+        for (int i = 0; i < nbf * nbf; i++) {
+            // printf("purif->F_block[%d] = %.16f\n", i, purif->F_block[i]);
+            printf("purif->D_block[%d] = %.16f\n", i, purif->D_block[i]);
+        }
+    }
 
     // compute nuc energy
     double ene_nuc = CInt_getNucEnergy(basis);
@@ -399,11 +411,22 @@ int main (int argc, char **argv)
 
         // fock matrix construction
         t1 = MPI_Wtime();
+        printf("rank = %d, fock build start...\n", myrank);
+        printf("rank = %d, rowstart = %d, rowend = %d, colstart = %d, colend = %d\n", myrank, rowstart, rowend, colstart, colend);
         fock_build(pfock, basis, purif->runpurif,
                    rowstart, rowend, colstart, colend,
                    purif->ldx, purif->D_block, purif->F_block);
+        printf("rank = %d, fock build done\n", myrank);
         // compute energy
+        // if (myrank == 0) {
+        //     int nbf = pfock->nbf;
+        //     for (int i = 0; i < nbf * nbf; i++) {
+        //         printf("purif->F_block[%d] = %.16f\n", i, purif->F_block[i]);
+        //         printf("purif->D_block[%d] = %.16f\n", i, purif->D_block[i]);
+        //     }
+        // }
         double energy = compute_energy(purif, purif->F_block, purif->D_block);
+        printf("rank = %d, energy computed: %.16f\n", myrank, energy);
         t2 = MPI_Wtime();
         if (myrank == 0) {
             printf("    fock build takes %.3f secs\n", t2 - t1);
@@ -417,6 +440,7 @@ int main (int argc, char **argv)
             }
         }
         if (iter > 0 && fabs (energy - energy0) < 1e-11) {
+            printf("  Converged at iteration %d\n", iter);
             niters = iter + 1;
             break;
         }
@@ -485,36 +509,38 @@ int main (int argc, char **argv)
         t4 = MPI_Wtime ();
         totaltime += t4 - t3;
 
-#ifdef __SCF_TIMING__
-        PFock_getStatistics(pfock);
-        double purif_timedgemm;
-        double purif_timepdgemm;
-        double purif_timepass;
-        double purif_timetr;
-        MPI_Reduce(&purif->timedgemm, &purif_timedgemm,
-                   1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        MPI_Reduce(&purif->timepdgemm, &purif_timepdgemm,
-                   1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        MPI_Reduce(&purif->timepass, &purif_timepass,
-                   1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        MPI_Reduce(&purif->timetr, &purif_timetr,
-                   1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        if (myrank == 0) {
-            printf("    Purification Statistics:\n");
-            printf("      average totaltime  = %.3f\n"
-                   "      average timetr     = %.3f\n"
-                   "      average timedgemm  = %.3f, %.3f Gflops\n"
-                   "      average timepdgemm = %.3f, %.3f Gflops\n",
-                   purif_timepass / purif->np_purif,
-                   purif_timetr / purif->np_purif,
-                   purif_timedgemm / purif->np_purif,
-                   (it * 2.0 + 4.0) *
-                   purif_flops / (purif_timedgemm / purif->np_purif) / 1e9,
-                   purif_timepdgemm / purif->np_purif,
-                   (it * 2.0 + 4.0) *
-                   purif_flops / (purif_timepdgemm / purif->np_purif) / 1e9);
-        }
-#endif
+// #ifdef __SCF_TIMING__
+//         PFock_getStatistics(pfock);
+//         double purif_timedgemm;
+//         double purif_timepdgemm;
+//         double purif_timepass;
+//         double purif_timetr;
+//         MPI_Reduce(&purif->timedgemm, &purif_timedgemm,
+//                    1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+//         MPI_Reduce(&purif->timepdgemm, &purif_timepdgemm,
+//                    1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+//         MPI_Reduce(&purif->timepass, &purif_timepass,
+//                    1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+//         MPI_Reduce(&purif->timetr, &purif_timetr,
+//                    1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+//         if (myrank == 0) {
+//             printf("    Purification Statistics:\n");
+//             printf("      average totaltime  = %.3f\n"
+//                    "      average timetr     = %.3f\n"
+//                    "      average timedgemm  = %.3f, %.3f Gflops\n"
+//                    "      average timepdgemm = %.3f, %.3f Gflops\n",
+//                    purif_timepass / purif->np_purif,
+//                    purif_timetr / purif->np_purif,
+//                    purif_timedgemm / purif->np_purif,
+//                    (it * 2.0 + 4.0) *
+//                    purif_flops / (purif_timedgemm / purif->np_purif) / 1e9,
+//                    purif_timepdgemm / purif->np_purif,
+//                    (it * 2.0 + 4.0) *
+//                    purif_flops / (purif_timepdgemm / purif->np_purif) / 1e9);
+//         }
+// #endif
+        MPI_Barrier(MPI_COMM_WORLD);
+        printf("rank = %d, totaltime = %.2f\n", myrank, totaltime);
     } /* for (iter = 0; iter < NITERATIONS; iter++) */
 
     if (myrank == 0) {
