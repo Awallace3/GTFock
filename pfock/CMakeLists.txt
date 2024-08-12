@@ -19,8 +19,6 @@ endif()
 message(STATUS "pfock CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 message(STATUS "pfock CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
-# set(BLAS_LIBS "-lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm")
-# set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lmkl_blacs_openmpi_lp64")
 
 # Include directories
 include_directories(
@@ -50,8 +48,14 @@ file(GLOB SRC "*.c")
 add_library(pfock STATIC ${SRC})
 
 # Ensure MPI is properly linked
-target_include_directories(pfock PUBLIC ${MPI_C_INCLUDE_PATH} {BLAS_LIBS} {SCALAPACK_LIBS})
-target_link_libraries(pfock PUBLIC MPI::MPI_CXX ${BLAS_LIBS} ${SCALAPACK_LIBS})
+# target_include_directories(pfock PUBLIC ${MPI_C_INCLUDE_PATH} {BLAS_LIBS} {SCALAPACK_LIBS})
+target_include_directories(pfock PUBLIC ${MPI_C_INCLUDE_PATH} $ENV{CONDA_PREFIX} ${BLAS_INCLUDE_PATH})
+# target_link_libraries(pfock PUBLIC MPI::MPI_CXX ${scalapack_INCLUDE_PATH} ${BLAS_INCLUDE_PATH} ${BLAS_LIBS} ${SCALAPACK_LIBS})
+
+message(STATUS "BLAS_LIBRARIES: ${BLAS_LIBRARIES}")
+message(STATUS "SCALAPACK_LIBS: ${SCALAPACK_LIBS}")
+target_link_libraries(pfock PUBLIC ${MPI_LIBS} ${SCALAPACK_LIBS} ${BLAS_LIBRARIES} MPI::MPI_CXX MPI::MPI_C)
+# target_link_libraries(pfock PUBLIC ${SCALAPACK_LIBS} ${BLAS_LIBRARIES} MPI::MPI_CXX MPI::MPI_C)
 
 # Post-build command to copy the library and header file to a 'install' directory
 add_custom_command(TARGET pfock POST_BUILD

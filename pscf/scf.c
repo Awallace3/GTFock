@@ -374,7 +374,7 @@ int main (int argc, char **argv)
     double diis_flops;
 
     // set initial guess
-    if (myrank == 0) printf("  initialing D ...\n");
+    if (myrank == 0) printf("  initializing D ...\n");
     pfock->num_dmat  = NUM_D;
     pfock->num_dmat2 = NUM_D * (pfock->nosymm + 1);
     initial_guess(pfock, basis, purif->runpurif,
@@ -383,9 +383,12 @@ int main (int argc, char **argv)
 
     // compute nuc energy
     double ene_nuc = CInt_getNucEnergy(basis);
-    if (myrank == 0) printf("  nuc energy = %.10f\n", ene_nuc);
+    // if (myrank == 0) printf("  nuc energy = %.10f\n", ene_nuc);
+    // if (myrank == 0) printf("  nuc energy = %.10f\n", ene_nuc);
+    printf(" rank = %d,  nuc energy = %.10f\n", myrank, ene_nuc);
 
     MPI_Barrier(MPI_COMM_WORLD);
+    printf("Leaving barrier...");
     // main loop
     double t1, t2, t3, t4;
     for (int iter = 0; iter < niters; iter++)

@@ -1,8 +1,16 @@
 cmake_minimum_required(VERSION 3.10)
 project(GTFock LANGUAGES C CXX)
+# /storage/home/hhive1/awallace43/data/.conda/envs/p4dev18/lib/cmake/scalapack-2.1.0
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# find_package(ScaLAPACK REQUIRED)
+# message(STATUS "ScaLAPACK_DIR: ${ScaLAPACK_DIR}")
+# get_cmake_property(_variableNames VARIABLES)
+# list (SORT _variableNames)
+# foreach (_variableName ${_variableNames})
+#     message(STATUS "${_variableName}=${${_variableName}}")
+# endforeach()
 find_package(MPI REQUIRED)
 find_package(simint REQUIRED)
 find_package(CInt REQUIRED)
@@ -10,8 +18,8 @@ find_package(GTMatrix REQUIRED)
 find_package(erd REQUIRED)
 find_package(oed REQUIRED)
 find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
 
-# Compiler options
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -qopenmp -std=gnu99 -fasm-blocks -g -xHost -Wunknown-pragmas -Wunused-variable")
 if(CMAKE_BUILD_TYPE STREQUAL "DEBUG" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
   # Add debug-specific configurations
@@ -28,14 +36,12 @@ message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 
 # Libraries
 # set(BLAS_LIBS "-lmkl_gf_lp64 -lmkl_core -lmkl_gnu_thread -lpthread -lm")
-
-message(STATUS "MKLROOT: ${MKLROOT}")
-set(BLAS_LIBS "-lmkl_gf_lp64")
+# set(BLAS_LIBS "-lmkl_gf_lp64")
 # set(BLAS_LIBS "-lblas -lmkl_gf_lp64 -lmkl_core -lmkl_gnu_thread -lm")
 # set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64")
-# set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lscalapackfx -lmpifx")
-set(SCALAPACK_LIBS "-m64  -L$ENV{CONDA_PREFIX}/lib -lmkl_scalapack_lp64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lmkl_blacs_openmpi_lp64 -lgomp -lpthread -lm -ldl")
-MESSAGE(STATUS "SCALAPACK_LIBS: ${SCALAPACK_LIBS}")
+set(SCALAPACK_LIBS "-m64 -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64")
+set(MPI_LIBS "-lmpi")
+message(STATUS "MPI_LIBS: ${MPI_LIBS}")
 
 # Include and link directories
 include_directories(
@@ -54,7 +60,7 @@ include_directories(
 
 
 
-message(STATUS "MPI FOUND")
+message(STATUS "MPI FOUND", ${MPI_C_VERSION})
 message(STATUS "MPI_INCLUDE_PATH: ${MPI_INCLUDE_PATH}")
 #include_directories(${MPI_C_INCLUDE_PATH})
 

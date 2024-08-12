@@ -67,6 +67,8 @@ target_include_directories(pscf
 )
 
 target_link_libraries(pscf
+    PUBLIC
+    ${MPI_C_LIBRARIES}
     pfock
     aligned_malloc
     ${simint_LIBRARIES}
@@ -74,9 +76,9 @@ target_link_libraries(pscf
     ${GTMatrix_LIBRARIES}
     ${BLAS_LIBS}
     ${SCALAPACK_LIBS}
+    ${BLAS_LIBRARIES} 
+    MPI::MPI_CXX MPI::MPI_C
     ${MPI_C_LIBRARIES}
-    $ENV{CONDA_PREFIX}/include
-    $ENV{CONDA_PREFIX}/lib
 )
 
 # Clean-up command (handled automatically by CMake)
