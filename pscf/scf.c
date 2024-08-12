@@ -387,8 +387,8 @@ int main (int argc, char **argv)
     // if (myrank == 0) printf("  nuc energy = %.10f\n", ene_nuc);
     printf(" rank = %d,  nuc energy = %.10f\n", myrank, ene_nuc);
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    printf("Leaving barrier...");
+    // MPI_Barrier(MPI_COMM_WORLD);
+    printf("%d Leaving barrier...\n", myrank);
     // main loop
     double t1, t2, t3, t4;
     for (int iter = 0; iter < niters; iter++)

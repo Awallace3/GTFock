@@ -323,7 +323,7 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     double t1, t2, *A, *Z, *work;
 	
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-    int nb = min(n / nprow, n / npcol);
+    int nb = MIN(n / nprow, n / npcol);
 	
     Cblacs_get(-1, 0, &ictxt);
     Cblacs_gridinit(&ictxt, (char *)"Row-major", nprow, npcol);
@@ -332,10 +332,11 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     int nrows = numroc_(&n, &nb, &myrow, &izero, &nprow);
     int ncols = numroc_(&n, &nb, &mycol, &izero, &npcol);
     int blocksize = nrows * ncols;
+    printf("  nrows = %d, ncols = %d, blocksize = %d\n", nrows, ncols, blocksize);
 	
     A = (double *)aligned_malloc(blocksize * sizeof(double), 64);
     Z = (double *)aligned_malloc(blocksize * sizeof(double), 64);
-    assert(A && Z);
+    assert(A && Z && A != NULL);
 
     memset(A, 0, blocksize * sizeof(double));
     memset(Z, 0, blocksize * sizeof(double));
@@ -345,12 +346,55 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     descinit_(descZ, &n, &n, &nb, &nb, &izero, &izero, &ictxt, &nrows, &info);
     
     // Populate matrix A and adjust Z with hypothetical values(Matrix initialization, knowledge initialize data source)
-    for (int i = 0; i < nrows; i++)
-    	for (int j = 0; j < ncols; j++) {
-            Z[i*ncols + j] = (double)rand()/RAND_MAX;  // test values ratio align equality random paradigm ensuring
+// for (int i = 0; i < nrows; i++) {
+//     for (int j = 0; j <= i; j++) { // Ensure symmetry 
+//         double value = (double)rand() / RAND_MAX;
+//         Z[i*ncols + j] = value;
+//         Z[j*ncols + i] = value;  // Symmetric pair assignment
+//         A[i*ncols + j] = value;
+//         A[j*ncols + i] = value;  // Symmetric pair assignment
+//     }
+// }
+	// 
+    GTM_startBatchGet(gtm_A);
+
+    for (int i = 1; i <= nrows; i += nb) 
+    {
+        lo[0] = indxl2g_(&i, &nb, &myrow, &izero, &nprow) - 1;
+        hi[0] = lo[0] + nb - 1;
+        hi[0] = hi[0] >= n ? n - 1 : hi[0];
+
+        for (int j = 1; j <= ncols; j += nb) 
+        {
+            lo[1] = indxl2g_(&j, &nb, &mycol, &izero, &npcol) - 1;
+            printf("lo[0] = %d, lo[1] = %d\n", lo[0], lo[1]);
+            hi[1] = lo[1] + nb - 1;
+            hi[1] = hi[1] >= n ? hi[1] = n - 1 : hi[1];
+            ld = ncols;
+
+            GTM_addGetBlockRequest(
+                gtm_A, 
+                lo[0], hi[0] - lo[0] + 1,
+                lo[1], hi[1] - lo[1] + 1,
+                &(Z[(i - 1) * ncols + j - 1]), ld
+            );
         }
-	
-    // Determine optimal work size for WORK
+    }
+
+    // Executes the accumulating collection
+    GTM_execBatchGet(gtm_A);
+    GTM_stopBatchGet(gtm_A);
+    GTM_sync(gtm_A);
+
+    for (int i = 0; i < nrows; i++) 
+    {
+        #pragma omp simd
+        for (int j = 0; j < ncols; j++) {
+          A[j * nrows + i] = Z[i * ncols + j];
+        }
+    }
+
+    
     work = (double *)aligned_malloc(2 * sizeof(double), 64);
     int *iwork = (int *)aligned_malloc(2 * sizeof(int), 64);
     memset(work, 0, 2 * sizeof(double));
@@ -359,9 +403,15 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     lwork = -1;
     liwork = -1;
 
+    printf("prior to pdsyevd_\n");
+
     // Ensure right conversions added validate wrong conversion/accuracy ratio Rule Synchron.ensuring Z-Matrix valid<d*nx-k correlations>
-    Cblacs_barrier(ictxt, "All");
-    pdsyevd_("V", "U", &n, A, &ione, &ione, descA, eval, Z, &ione, &ione, descZ, work, &lwork, iwork, &liwork, &info);
+    // Cblacs_barrier(ictxt, "All");
+    MPI_Barrier(MPI_COMM_WORLD);
+    // seg fault from pdsyevd_ call but not pdsyev...?
+    // pdsyevd_("V", "U", &n, A, &ione, &ione, descA, eval, Z, &ione, &ione, descZ, work, &lwork, iwork, &liwork, &info);
+    pdsyev("V", "U", &n, A, &ione, &ione, descA, eval, Z, &ione, &ione, descZ, work, &lwork, &info);
+    printf("after first call pdsyevd_\n");
 
     if (info != 0) {
         printf("[%d] Error In first pdsyevd_ execution: EXIT CODE=%d\n", myrank, info);
@@ -379,7 +429,9 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
     assert(work && iwork);
 
     t1 = MPI_Wtime();
-    pdsyevd_("V", "U", &n, A, &ione, &ione, descA, eval, Z, &ione, &ione, descZ, work, &lwork, iwork, &liwork, &info);
+    // pdsyevd_("V", "U", &n, A, &ione, &ione, descA, eval, Z, &ione, &ione, descZ, work, &lwork, iwork, &liwork, &info);
+    pdsyev("V", "U", &n, A, &ione, &ione, descA,
+            eval, Z, &ione, &ione, descZ, work, &lwork, &info);
 
     t2 = MPI_Wtime();
 
@@ -397,6 +449,7 @@ void my_peig(GTMatrix_t gtm_A, GTMatrix_t gtm_B, int n, int nprow, int npcol, do
         for (int j = 0; j < ncols; j++)
             A[i * ncols + j] = Z[j * nrows + i];
     }
+    printf("startbatchput\n");
     
     GTM_startBatchPut(gtm_B);
     for (int i = 1; i <= nrows; i += nb) 
