@@ -66,13 +66,33 @@ static void initial_guess(PFock_t pfock, BasisSet_t basis, int ispurif,
             double *guess;
             int spos, epos, ld;
             CInt_getInitialGuess(basis, i, &guess, &spos, &epos);
+            printf("spos = %d, epos = %d\n", spos, epos);
             ld = epos - spos + 1;
+            for (int j = spos; j <= epos; j++){
+                printf("guess[%d] = %.16f\n", j, guess[j]);
+            }
             double *Dmat_ptr = pfock->D_mat + spos * nbf + spos;
             copy_double_matrix_block(Dmat_ptr, nbf, guess, ld, ld, ld);
+            if (myrank == 0){
+                printf("GTMatrix sync done\n");
+                for (int i=0; i<=nbf; i++){
+                    for (int j=0; j<=nbf; j++){
+                        printf("pfock->D_mat[%d] = %.16f\n", i*nbf+j, pfock->D_mat[i*nbf+j]);
+                    }
+                }
+            }
         }
         GTM_putBlock(pfock->gtm_Dmat, 0, nbf, 0, nbf, pfock->D_mat, nbf);
     }
     GTM_sync(pfock->gtm_Dmat);
+    if (myrank == 0){
+        printf("GTMatrix sync done\n");
+        for (int i=0; i<=nbf; i++){
+            for (int j=0; j<=nbf; j++){
+                printf("pfock->D_mat[%d] = %.16f\n", i*nbf+j, pfock->D_mat[i*nbf+j]);
+            }
+        }
+    }
 
     MPI_Bcast(&R, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
@@ -91,6 +111,8 @@ static void initial_guess(PFock_t pfock, BasisSet_t basis, int ispurif,
         {
 
                 D_block[(x - rowstart) * ldD + (y - colstart)] *= R;
+            // If I set this to 0.00001, I do get an electronic energy computed... something is wrong with the initial guess copying to D_mat above...
+                // D_block[(x - rowstart) * ldD + (y - colstart)] = 0.00001;
             printf("D_block[%d] = %.16f\n", (x - rowstart) * ldD + (y - colstart), D_block[(x - rowstart) * ldD + (y - colstart)]);
         }
     }
@@ -360,6 +382,14 @@ int main (int argc, char **argv)
         printf("  CPU uses %.3f MB\n", mem_cpu / 1024.0 / 1024.0);
         printf("  Done\n");
     }
+    if (myrank == 0) {
+        printf("Initializing pfock ...\n");
+        int nbf = pfock->nbf;
+        for (int i = 0; i < nbf * nbf; i++) {
+            // Expect this to be initialized to 0...
+            printf("pfock->D_mat[%d] = %.16f\n", i, pfock->D_mat[i]);
+        }
+    }
 
     // init purif
     purif_t *purif = create_purif(basis, nprow_purif, nprow_purif, nprow_purif);
@@ -385,6 +415,7 @@ int main (int argc, char **argv)
     initial_guess(pfock, basis, purif->runpurif,
                   rowstart, rowend, colstart, colend,
                   purif->D_block, purif->ldx);
+    // Expect D_blcok to be non-zero now
     if (myrank == 0) {
         int nbf = pfock->nbf;
         for (int i = 0; i < nbf * nbf; i++) {
@@ -418,13 +449,15 @@ int main (int argc, char **argv)
                    purif->ldx, purif->D_block, purif->F_block);
         printf("rank = %d, fock build done\n", myrank);
         // compute energy
-        // if (myrank == 0) {
-        //     int nbf = pfock->nbf;
-        //     for (int i = 0; i < nbf * nbf; i++) {
-        //         printf("purif->F_block[%d] = %.16f\n", i, purif->F_block[i]);
-        //         printf("purif->D_block[%d] = %.16f\n", i, purif->D_block[i]);
-        //     }
-        // }
+        if (myrank == 0) {
+            int nbf = pfock->nbf;
+            for (int i = 0; i < nbf * nbf; i++) {
+                // printf("purif->F_block[%d] = %.16f\n", i, purif->F_block[i]);
+                printf("purif->H_block[%d] = %.16f\n", i, purif->H_block[i]);
+                printf("purif->D_block[%d] = %.16f\n", i, purif->D_block[i]);
+            }
+        }
+
         double energy = compute_energy(purif, purif->F_block, purif->D_block);
         printf("rank = %d, energy computed: %.16f\n", myrank, energy);
         t2 = MPI_Wtime();
