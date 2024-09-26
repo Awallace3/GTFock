@@ -11,4 +11,5 @@
 
 # WATER EXAMPLE
 # mpirun --mca btl ^openib -np 2 --oversubscribe build/pscf/pscf ./data/aug-cc-pvtz.gbs ./data/water.xyz 2 1 1 4 10
-mpirun --mca btl ^openib -np 2 --oversubscribe build/pscf/pscf ./data/sto-3g.gbs ./data/water.xyz 2 1 1 4 10
+# mpirun --mca btl ^openib -np 2 --oversubscribe build/pscf/pscf ./data/sto-3g.gbs ./data/water.xyz 2 1 1 4 10
+mpirun  -np 2 build/pscf/pscf ./data/sto-3g.gbs ./data/water.xyz 2 1 1 4 10

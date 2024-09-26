@@ -39,7 +39,8 @@ message(STATUS "CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 # set(BLAS_LIBS "-lmkl_gf_lp64")
 # set(BLAS_LIBS "-lblas -lmkl_gf_lp64 -lmkl_core -lmkl_gnu_thread -lm")
 # set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64")
-set(SCALAPACK_LIBS "-m64 -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64")
+# set(SCALAPACK_LIBS "-m64 -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64")
+set(SCALAPACK_LIBS "-lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64")
 set(MPI_LIBS "-lmpi")
 message(STATUS "MPI_LIBS: ${MPI_LIBS}")
 
@@ -56,6 +57,9 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/pfock
     ${ERD_INCLUDE_DIRS}
     ${OED_INCLUDE_DIRS}
+)
+link_directories(
+    $ENV{CONDA_PREFIX}/lib
 )
 
 
